@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Film Bilgisi</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: white;
+      color: #eee;
+    }
+    #search-banner {
+      position: fixed;
+      top: 0; left: 0; width: 95%;
+      background: #1f1f1f;
+      padding: 10px 10px 0 10px;
+      display: flex;
+      flex-direction: column;
+      z-index: 1000;
+    }
+  #search-row {
+  display: flex;
+  gap: 6px; 
+  width: 50%;
+  flex-direction: row;
+}
+
+#search-button-container {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+#search-button, #show-favorites {
+  width: 10%;
+}
+
+    }
+    #search-input {
+      padding: 2px;
+      font-size: 15px;
+      border-radius: 5px;
+      border: none;
+      box-sizing: border-box;
+      width: 10%;
+    }
+    #search-button, #show-favorites, #back-to-search {
+      width: 25%;
+      height: 30px;
+      padding: 7px 15px;
+      font-size: 15px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      user-select: none;
+      box-sizing: border-box;
+    }
+    #search-button {
+      background-color: #e50914;
+      color: white;
+      transition: background-color 0.3s;
+    }
+    #search-button:hover {
+      background-color: #b0060f;
+    }
+    #show-favorites {
+      background-color: #b8860b;
+      color: white;
+      transition: background-color 0.3s;
+    }
+    #show-favorites:hover {
+      background-color: #a37508;
+    }
+    #back-to-search {
+      background-color: #555;
+      color: white;
+      margin-bottom: 0px;
+      text-align: center;
+      padding-left: 8px;
+      padding-right: 8px;
+      width: 30%; 
+      transition: background-color 0.3s;
+    }
+    #back-to-search:hover {
+      background-color: #777;
+    }
+    .search-type-group {
+      display: flex;
+      gap: 20px;
+      margin-top: 6px;
+      margin-left: 2px;
+      margin-bottom: 5px;
+    }
+    .search-type-label {
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      user-select: none;
+      padding: 4px 12px;
+      border-radius: 6px;
+      background-color: #333;
+      transition: background-color 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .search-type-label:hover {
+      background-color: #444;
+    }
+    .search-type-radio {
+      accent-color: #e50914;
+      cursor: pointer;
+      display: none;
+    }
+    .search-type-radio:checked + span {
+      background-color: #e50914;
+      color: white;
+      font-weight: bold;
+    }
+    #results-container {
+      margin-top: 90px;
+      padding: 3px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      min-height: 150px;
+    }
+    /* Belirgin uyarı mesajı */
+    .uyari-mesaji {
+      color: #b8860b !important;
+      font-weight: bold;
+      font-size: 22px;
+      background: #fffbe8;
+      border: 2px solid #b8860b;
+      border-radius: 10px;
+      padding: 18px 30px;
+      margin: 32px auto 0 auto;
+      text-align: center;
+      display: block;
+      box-shadow: 0 2px 8px rgba(184,134,11,0.10);
+      letter-spacing: 0.5px;
+      max-width: 90vw;
+    }
+    .film-card {
+      background: #222;
+      border-radius: 0px;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.7);
+      transition: transform 0.2s;
+      overflow: hidden;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      padding-bottom: 40px;
+    }
+    .film-card:hover {
+      transform: scale(1.05);
+    }
+    .film-poster {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 2 / 3;
+      object-fit: cover;
+      display: block;
+      border-radius: 0px 0px 0 0;
+    }
+    .film-title {
+      font-weight: bold;
+      margin: 8px 0 4px;
+      font-size: 18px;
+      color: #fff;
+    }
+    .film-info {
+      font-size: 14px;
+      color: #bbb;
+      margin-bottom: 12px;
+    }
+    .favorite-btn {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: transparent;
+      border: none;
+      font-size: 26px;
+      cursor: pointer;
+      color: #b8860b;
+      transition: color 0.3s;
+      user-select: none;
+      padding: 0;
+      line-height: 1;
+    }
+    .favorite-btn:hover {
+      color: #ffd700;
+    }
+    .heart-icon {
+      pointer-events: none;
+      user-select: none;
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      vertical-align: middle;
+    }
+    .heart-icon.empty {
+      background-image: url('data:image/svg+xml;utf8,<svg fill="none" stroke="%23b8860b" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>');
+    }
+    .heart-icon.filled {
+      background-image: url('data:image/svg+xml;utf8,<svg fill="%23b8860b" stroke="%23b8860b" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>');
+    }
+    #detail-modal {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.9);
+      display: none;
+      justify-content: center;
+      align-items: flex-start;
+      z-index: 2000;
+      overflow-y: auto;
+    }
+    #detail-modal.active {
+      display: flex;
+    }
+    #modal-banner {
+      position: sticky;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #222;
+      padding: 10px 0;
+      text-align: right;
+      z-index: 10;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+    }
+    #close-detail {
+      font-size: 32px;
+      color: #fff;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      margin-right: 20px;
+      user-select: none;
+      line-height: 1;
+    }
+    #detail-content {
+      background: #1f1f1f;
+      border-radius: 0 0 12px 12px;
+      max-width: 400px;
+      width: 90vw;
+      min-width: 260px;
+      padding: 16px 10px 24px 10px;
+      color: #eee;
+      margin: 0 auto;
+      margin-top: 0;
+      max-height: 70vh;
+      overflow-y: auto;
+      box-sizing: border-box;
+      position: relative;
+    }
+    body.modal-open {
+      overflow: hidden;
+      touch-action: none;
+    }
+    #detail-poster {
+      width: 100%;
+      max-width: 620px;
+      display: block;
+      margin: 0 auto 20px auto;
+      border-radius: 10px;
+      object-fit: cover;
+    }
+    .detail-block {
+      margin-bottom: 18px;
+    }
+    .detail-label {
+      display: block;
+      font-weight: 700;
+      font-size: 18px;
+      margin-bottom: 3px;
+      text-transform: uppercase;
+    }
+    .detail-text {
+      display: block;
+      font-size: 16px;
+      color: #ccc;
+      white-space: pre-wrap;
+    }
+    .detail-block:last-child {
+      margin-bottom: 0;
+    }
+    .actor-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .actor-row {
+      display: flex;
+      text-align: right;
+      width: 100%;
+      justify-content: flex-end;
+      align-items: flex-start;
+      margin-bottom: 4px;
+      padding-bottom: 0px;
+      min-height: unset;
+    }
+    .actor-row:last-child {
+  margin-bottom: -2;
+}
+    .actor-photo {
+      width: 90px;
+      height: 125px;
+      object-fit: cover;
+      border-radius: 5px;
+      margin-right: 100px;
+      background: #333;
+      flex-shrink: 0;
+    }
+    .actor-link {
+      color: #4FC3F7;
+      text-decoration: underline;
+      cursor: pointer;
+      font-size: 18px;
+      font-items: center;
+      word-break: break-word;
+    }
+    .actor-character {
+      display: block;
+      font-style: italic;
+      font-weight: bold;
+      font-size: 17px;
+      color: #aaa;
+      margin-left: 10;
+    }
+    .collection-block {
+      margin-bottom: 18px;
+    }
+    .collection-title {
+      font-weight: bold;
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: #FFD700;
+    }
+    .collection-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .collection-item {
+      display: flex;
+      align-items: center;
+      background: #222;
+      border-radius: 7px;
+      padding: 6px 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .collection-item:hover {
+      background: #333;
+    }
+    .collection-poster {
+      width: 50px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 3px;
+      margin-right: 10px;
+      background: #444;
+      flex-shrink: 0;
+    }
+    .collection-name {
+      color: #fff;
+      font-size: 16px;
+      font-weight: 500;
+      flex: 1;
+    }
+    .google-search-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background-color: #4285F4;
+      color: white;
+      font-weight: 500;
+      padding: 1px 20px;
+      border-radius: 30px;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      box-shadow: 0 4px 8px rgba(66, 133, 244, 0.4);
+      transition: background-color 0.3s, box-shadow 0.3s;
+      text-decoration: none;
+      user-select: none;
+    }
+    .google-search-button:hover {
+      background-color: #3367D6;
+      box-shadow: 0 6px 12px rgba(51, 103, 214, 0.6);
+    }
+  </style>
+</head>
+<body>
+
+<header id="search-banner">
+  <div id="search-row">
+    <input type="text" id="search-input" placeholder="Film adı, oyuncu adı yazın..." autocomplete="off" />
+    <button id="search-button">Ara</button>
+    <button id="show-favorites">Fav.</button>
+    <button id="back-to-search">AGD</button>
+  </div>
+  <div class="search-type-group">
+    <label class="search-type-label">
+      <input type="radio" name="search-type" class="search-type-radio" value="film" id="radio-film" checked />
+      <span>Film</span>
+    </label>
+    <label class="search-type-label">
+      <input type="radio" name="search-type" class="search-type-radio" value="actor" id="radio-actor" />
+      <span>Oyuncu</span>
+    </label>
+  </div>
+</header>
+
+<main id="results-container"></main>
+
+<div id="detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+  <div style="width:100%;max-width:400px;margin:0 auto;">
+    <div id="modal-banner">
+      <button id="close-detail" aria-label="Kapat">&times;</button>
+    </div>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<script>
+  const apiKey = '4914230c4aaf1ff8599a892b0dfc71f4';
+  const baseImageUrl = 'https://image.tmdb.org/t/p/w500';
+
+  const searchInput = document.getElementById('search-input');
+  const searchButton = document.getElementById('search-button');
+  const showFavoritesBtn = document.getElementById('show-favorites');
+  const backToSearchBtn = document.getElementById('back-to-search');
+  const resultsContainer = document.getElementById('results-container');
+  const detailModal = document.getElementById('detail-modal');
+  const detailContent = document.getElementById('detail-content');
+  const closeDetailButton = document.getElementById('close-detail');
+  const searchTypeRadios = document.getElementsByName('search-type');
+
+  let genres = [];
+  let isFavoritesMode = false;
+  let lastSearchScrollPosition = 0;
+  let lastSearchQueryValue = '';
+  let lastSearchTypeValue = 'film';
+  let currentScrollPosition = 0;
+
+  function getFavorites() {
+    const favs = localStorage.getItem('favoriteMovies');
+    return favs ? JSON.parse(favs) : [];
+  }
+
+  function addFavorite(movieId) {
+    const favs = getFavorites();
+    if (!favs.includes(movieId)) {
+      favs.push(movieId);
+      localStorage.setItem('favoriteMovies', JSON.stringify(favs));
+    }
+  }
+
+  function removeFavorite(movieId) {
+    let favs = getFavorites();
+    favs = favs.filter(id => id !== movieId);
+    localStorage.setItem('favoriteMovies', JSON.stringify(favs));
+  }
+
+  function isFavorite(movieId) {
+    const favs = getFavorites();
+    return favs.includes(movieId);
+  }
+
+  async function fetchGenres() {
+    try {
+      const res = await fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${apiKey}&language=tr-TR`);
+      const data = await res.json();
+      return data.genres;
+    } catch (error) {
+      console.error("Türler alınırken hata oluştu:", error);
+      return [];
+    }
+  }
+
+  function getSearchType() {
+    for (const radio of searchTypeRadios) {
+      if (radio.checked) return radio.value;
+    }
+    return "film";
+  }
+
+  function saveLastSearch(query, type) {
+    localStorage.setItem('lastSearchQuery', query);
+    localStorage.setItem('lastSearchType', type);
+  }
+
+  function getLastSearch() {
+    const query = localStorage.getItem('lastSearchQuery');
+    const type = localStorage.getItem('lastSearchType');
+    return { query, type };
+  }
+
+  async function searchMovies(query) {
+    isFavoritesMode = false;
+    // backToSearchBtn.style.display = 'none';
+    resultsContainer.innerHTML = '<p class="uyari-mesaji">Aranıyor...</p>';
+    let allResults = [];
+    try {
+      for (let page = 1; page <= 10; page++) {
+        const response = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=tr-TR&page=${page}`);
+        const data = await response.json();
+        if (data.results && data.results.length > 0) {
+          allResults = allResults.concat(data.results);
+        } else {
+          break;
+        }
+      }
+      allResults = allResults.filter(movie => movie.vote_count >= 80);
+
+      if (allResults.length > 0) {
+        allResults.sort((a,b) => {
+          const yearA = a.release_date ? parseInt(a.release_date.slice(0,4)) : 0;
+          const yearB = b.release_date ? parseInt(b.release_date.slice(0,4)) : 0;
+          return yearA - yearB;
+        });
+        displayMovies(allResults);
+        saveLastSearch(query, 'film'); // Arama başarılı olduğunda kaydet
+        return allResults; // Promise'i sonuçlarla döndür
+      } else {
+        resultsContainer.innerHTML = '<p class="uyari-mesaji">Film bulunamadı veya yeterli oy alan film yok.</p>';
+        return []; // Boş dizi döndür
+      }
+    } catch (error) {
+      resultsContainer.innerHTML = '<p class="uyari-mesaji">Bir hata oluştu. Lütfen tekrar deneyin.</p>';
+      console.error(error);
+      return []; // Hata durumunda boş dizi döndür
+    }
+  }
+
+  async function searchActorMovies(query) {
+    isFavoritesMode = false;
+    // backToSearchBtn.style.display = 'none';
+    resultsContainer.innerHTML = '<p class="uyari-mesaji">Oyuncu aranıyor...</p>';
+    try {
+      const response = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=tr-TR`);
+      const data = await response.json();
+      if (data.results && data.results.length > 0) {
+        const person = data.results[0];
+        if (person.known_for_department !== "Acting" && (!person.known_for || person.known_for.length === 0)) {
+          resultsContainer.innerHTML = '<p class="uyari-mesaji">Oyuncu bulunamadı.</p>';
+          return [];
+        }
+        const creditsRes = await fetch(`https://api.themoviedb.org/3/person/${person.id}/movie_credits?api_key=${apiKey}&language=tr-TR`);
+        const creditsData = await creditsRes.json();
+        if (creditsData.cast && creditsData.cast.length > 0) {
+          const movies = creditsData.cast.filter(m => m.release_date && m.vote_count >= 100).sort((a,b) => {
+            const yearA = a.release_date ? parseInt(a.release_date.slice(0,4)) : 0;
+            const yearB = b.release_date ? parseInt(b.release_date.slice(0,4)) : 0;
+            return yearA - yearB;
+          });
+          if (movies.length > 0) {
+            displayMovies(movies);
+            saveLastSearch(query, 'actor'); // Arama başarılı olduğunda kaydet
+            return movies;
+          } else {
+            resultsContainer.innerHTML = '<p class="uyari-mesaji">Bu oyuncunun oynadığı yeterli oy alan film bulunamadı.</p>';
+            return [];
+          }
+        } else {
+          resultsContainer.innerHTML = '<p class="uyari-mesaji">Bu oyuncunun oynadığı film bulunamadı.</p>';
+          return [];
+        }
+      } else {
+        resultsContainer.innerHTML = '<p class="uyari-mesaji">Oyuncu bulunamadı.</p>';
+        return [];
+      }
+    } catch (error) {
+      resultsContainer.innerHTML = '<p class="uyari-mesaji">Bir hata oluştu. Lütfen tekrar deneyin.</p>';
+      console.error(error);
+      return [];
+    }
+  }
+
+  async function searchByGenreSorted(genreName) {
+    isFavoritesMode = false;
+   // backToSearchBtn.style.display = 'none';
+    resultsContainer.innerHTML = '<p class="uyari-mesaji">Aranıyor...</p>';
+    try {
+      const matchedGenres = genres.filter(g => g.name.toLowerCase() === genreName.toLowerCase());
+      if (matchedGenres.length === 0) {
+        resultsContainer.innerHTML = '<p class="uyari-mesaji">Tür bulunamadı. Lütfen geçerli bir tür adı yazın.</p>';
+        return [];
+      }
+      const genreId = matchedGenres[0].id;
+      let allResults = [];
+      for (let page = 1; page <= 10; page++) {
+        const response = await fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&with_genres=${genreId}&language=tr-TR&sort_by=vote_average.desc&vote_count.gte=150&page=${page}`);
+        const data = await response.json();
+        if (data.results && data.results.length > 0) {
+          allResults = allResults.concat(data.results);
+        } else {
+          break;
+        }
+      }
+      if (allResults.length > 0) {
+        displayMovies(allResults);
+        saveLastSearch(genreName, 'genreSorted'); // Arama başarılı olduğunda kaydet
+        return allResults;
+      } else {
+        resultsContainer.innerHTML = '<p class="uyari-mesaji">Bu türe ait film bulunamadı.</p>';
+        return [];
+      }
+    } catch (error) {
+      resultsContainer.innerHTML = '<p class="uyari-mesaji">Bir hata oluştu. Lütfen tekrar deneyin.</p>';
+      console.error(error);
+      return [];
+    }
+  }
+
+  function displayMovies(movies) {
+    resultsContainer.innerHTML = '';
+    movies.forEach(movie => {
+      const filmCard = document.createElement('div');
+      filmCard.classList.add('film-card');
+
+      const posterPath = movie.poster_path ? baseImageUrl + movie.poster_path : 'https://via.placeholder.com/500x750?text=No+Image';
+
+      const isFav = isFavorite(movie.id);
+      const starClass = isFav ? 'filled' : 'empty';
+
+      filmCard.innerHTML = `
+        <img src="${posterPath}" alt="${movie.title || movie.original_title}" class="film-poster" />
+        <div class="film-title">${movie.title || movie.original_title}</div>
+        <div class="film-info">IMDB: ${movie.vote_average ? movie.vote_average.toFixed(1) : '-'} | ${movie.release_date ? movie.release_date.slice(0,4) : 'Yıl yok'}</div>
+        <button class="favorite-btn" aria-label="Favorilere ekle" data-movie-id="${movie.id}">
+          <span class="heart-icon ${starClass}"></span>
+        </button>
+      `;
+
+      filmCard.addEventListener('click', (e) => {
+        if (e.target.closest('.favorite-btn')) return;
+        showMovieDetails(movie.id);
+        detailContent.scrollTop = 0;
+        openModal();
+      });
+
+      resultsContainer.appendChild(filmCard);
+    });
+  }
+
+  resultsContainer.addEventListener('click', (e) => {
+    const favBtn = e.target.closest('.favorite-btn');
+    if (!favBtn) return;
+
+    e.stopPropagation();
+    const movieId = parseInt(favBtn.dataset.movieId);
+    const iconSpan = favBtn.querySelector('.heart-icon');
+
+    if (isFavorite(movieId)) {
+      removeFavorite(movieId);
+      iconSpan.classList.remove('filled');
+      iconSpan.classList.add('empty');
+
+      if (isFavoritesMode) {
+        favBtn.closest('.film-card').remove();
+        if (getFavorites().length === 0) {
+          resultsContainer.innerHTML = '<p class="uyari-mesaji">Favori film yok.</p>';
+        }
+      }
+    } else {
+      addFavorite(movieId);
+      iconSpan.classList.remove('empty');
+      iconSpan.classList.add('filled');
+    }
+  });
+
+  showFavoritesBtn.addEventListener('click', async () => {
+    currentScrollPosition = window.scrollY; // Mevcut kaydırma pozisyonunu al
+    isFavoritesMode = true;
+    backToSearchBtn.style.display = 'block';
+    const favIds = getFavorites();
+    if (favIds.length === 0) {
+      resultsContainer.innerHTML = '<p class="uyari-mesaji">Favori film yok.</p>';
+      return;
+    }
+    resultsContainer.innerHTML = '<p class="uyari-mesaji">Favoriler yükleniyor...</p>';
+
+    let favMovies = [];
+    try {
+      for (const id of favIds) {
+        const res = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${apiKey}&language=tr-TR`);
+        const movie = await res.json();
+        favMovies.push(movie);
+      }
+      displayMovies(favMovies);
+    } catch (error) {
+      resultsContainer.innerHTML = '<p class="uyari-mesaji">Favoriler yüklenirken hata oluştu.</p>';
+      console.error(error);
+    }
+  });
+
+  backToSearchBtn.addEventListener('click', () => {
+    isFavoritesMode = false;
+   // backToSearchBtn.style.display = 'none';
+    const lastSearch = getLastSearch();
+    resultsContainer.innerHTML = '<p class="uyari-mesaji">Son arama sonuçları yükleniyor...</p>'; // Kullanıcıya geri bildirim
+
+    const displayLastSearchResults = (results) => {
+      resultsContainer.innerHTML = '';
+      displayMovies(results);
+      // Kaydırma pozisyonunu geri yükle
+      setTimeout(() => {
+        window.scrollTo(0, currentScrollPosition);
+      }, 100);
+    };
+
+    if (lastSearch.query) {
+      searchInput.value = lastSearch.query;
+      for (const radio of searchTypeRadios) {
+        if (radio.value === lastSearch.type) {
+          radio.checked = true;
+          break;
+        }
+      }
+      if (lastSearch.type === 'film') {
+        searchMovies(lastSearch.query).then(displayLastSearchResults);
+      } else if (lastSearch.type === 'actor') {
+        searchActorMovies(lastSearch.query).then(displayLastSearchResults);
+      } else if (lastSearch.type === 'genreSorted') {
+        searchByGenreSorted(lastSearch.query).then(displayLastSearchResults);
+      }
+    } else {
+      searchInput.value = lastSearchQueryValue;
+      for (const radio of searchTypeRadios) {
+        if (radio.value === lastSearchTypeValue) {
+          radio.checked = true;
+          break;
+        }
+      }
+      resultsContainer.innerHTML = '<p class="uyari-mesaji">Arama geçmişi bulunamadı.</p>';
+      window.scrollTo(0, 0); // Arama geçmişi yoksa en üste dön
+    }
+  });
+
+  async function showMovieDetails(movieId) {
+    try {
+      const response = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${apiKey}&language=tr-TR&append_to_response=credits`);
+      const movie = await response.json();
+
+      detailContent.innerHTML = '';
+
+      const posterPath = movie.poster_path ? baseImageUrl + movie.poster_path : 'https://via.placeholder.com/500x750?text=No+Image';
+
+      const posterImg = document.createElement('img');
+      posterImg.id = 'detail-poster';
+      posterImg.src = posterPath;
+      posterImg.alt = movie.title;
+      detailContent.appendChild(posterImg);
+
+      if (movie.belongs_to_collection && movie.belongs_to_collection.id) {
+        const collId = movie.belongs_to_collection.id;
+        const collRes = await fetch(`https://api.themoviedb.org/3/collection/${collId}?api_key=${apiKey}&language=tr-TR`);
+        const collData = await collRes.json();
+        if (collData && collData.parts && collData.parts.length > 1) {
+          addCollectionBlock(movie.belongs_to_collection, collData.parts);
+        }
+      }
+
+      addBlock('FİLM ADI:', movie.title.toUpperCase());
+      addBlock('IMDB PUANI:', movie.vote_average.toFixed(1));
+      addBlock('YAPIM YILI:', movie.release_date ? movie.release_date.slice(0,4) : 'Bilinmiyor');
+
+      if (movie.genres && movie.genres.length > 0) {
+        const genreLinks = movie.genres.map(genre => {
+          const url = `${window.location.origin}${window.location.pathname}?search=${encodeURIComponent(genre.name)}&searchType=genreSorted`;
+          return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#4FC3F7; text-decoration: underline; cursor:pointer;">${genre.name}</a>`;
+        }).join(', ');
+        addBlock('TÜR:', genreLinks, true);
+      }
+
+      const castArr = movie.credits && movie.credits.cast ? movie.credits.cast.slice(0,10) : [];
+      let castHtml = '<ul class="actor-list">';
+      if (castArr.length > 0) {
+        castArr.forEach(actor => {
+          const name = actor.name;
+          const character = actor.character || '';
+          const appSearchUrl = `${window.location.origin}${window.location.pathname}?search=${encodeURIComponent(name)}&searchType=actor`;
+
+          const imgSrc = actor.profile_path
+            ? `https://image.tmdb.
+org/t/p/w92${actor.profile_path}`
+            : 'https://via.placeholder.com/40x60?text=No+Image';
+
+          castHtml += `
+            <li class="actor-row">
+              <img src="${imgSrc}" alt="${name}" class="actor-photo" />
+              <div>
+                <a href="${appSearchUrl}" target="_blank" rel="noopener noreferrer" class="actor-link">${name}</a><br/>
+                <span class="actor-character">(${character})</span>
+              </div>
+            </li>
+          `;
+        });
+      } else {
+        castHtml += '<li>Bilinmiyor</li>';
+      }
+      castHtml += '</ul>';
+      addBlock('OYUNCULAR:', castHtml, true);
+
+      addBlock('FİLM KONUSU:', movie.overview || 'Bilinmiyor');
+
+      const searchUrlGoogle = `https://www.google.com/search?q=${encodeURIComponent(movie.title + " full izle")}`;
+      const watchLinksHtml = `
+        <a href="${searchUrlGoogle}" target="_blank" rel="noopener noreferrer" class="google-search-button" aria-label="Google'da ${movie.title} filmini ara">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.71 20.29l-3.388-3.388a7.5 7.5 0 10-1.414 1.414l3.388 3.388a1 1 0 001.414-1.414zM10.5 16a5.5 5.5 0 115.5-5.5 5.507 5.507 0 01-5.5 5.5z"/></svg>
+          Google'da Ara
+        </a>
+      `;
+      addBlock('İZLEME SEÇENEKLERİ:', watchLinksHtml, true);
+
+      openModal();
+    } catch (error) {
+      alert('Film detayları alınırken hata oluştu.');
+      console.error(error);
+    }
+  }
+
+  function addBlock(title, content, isHtml = false) {
+    const block = document.createElement('div');
+    block.className = 'detail-block';
+
+    const label = document.createElement('div');
+    label.className = 'detail-label';
+    label.textContent = title;
+
+    const text = document.createElement('div');
+    text.className = 'detail-text';
+    if (isHtml) {
+      text.innerHTML = content;
+    } else {
+      text.textContent = content;
+    }
+
+    block.appendChild(label);
+    block.appendChild(text);
+    detailContent.appendChild(block);
+  }
+
+  function addCollectionBlock(collection, parts) {
+    const block = document.createElement('div');
+    block.className = 'collection-block';
+
+    const title = document.createElement('div');
+    title.className = 'collection-title';
+    title.textContent = `KOLEKSİYON: ${collection.name}`;
+    block.appendChild(title);
+
+    const list = document.createElement('div');
+    list.className = 'collection-list';
+
+    parts.sort((a,b) => {
+      const yearA = a.release_date ? parseInt(a.release_date.slice(0,4)) : 0;
+      const yearB = b.release_date ? parseInt(b.release_date.slice(0,4)) : 0;
+      return yearA - yearB;
+    });
+
+    parts.forEach(part => {
+      const item = document.createElement('div');
+      item.className = 'collection-item';
+
+      const poster = document.createElement('img');
+      poster.className = 'collection-poster';
+      poster.src = part.poster_path ? `https://image.tmdb.org/t/p/w92${part.poster_path}` : 'https://via.placeholder.com/40x60?text=No+Image';
+      poster.alt = part.title;
+
+      const name = document.createElement('span');
+      name.className = 'collection-name';
+      name.textContent = `${part.title} (${part.release_date ? part.release_date.slice(0,4) : 'Yıl yok'})`;
+
+      item.appendChild(poster);
+      item.appendChild(name);
+
+      item.addEventListener('click', function(e){
+        e.stopPropagation();
+        showMovieDetails(part.id);
+      });
+
+      list.appendChild(item);
+    });
+
+    block.appendChild(list);
+    detailContent.appendChild(block);
+  }
+
+  function openModal() {
+    detailModal.classList.add('active');
+    document.body.classList.add('modal-open');
+  }
+  function closeModal() {
+    detailModal.classList.remove('active');
+    document.body.classList.remove('modal-open');
+    detailContent.innerHTML = '';
+  }
+
+  closeDetailButton.addEventListener('click', closeModal);
+
+  detailModal.addEventListener('mousedown', function(e){
+    if(e.target === detailModal){
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  }, true);
+
+  searchButton.addEventListener('click', () => {
+    isFavoritesMode = false;
+   // backToSearchBtn.style.display = 'none';
+    const query = searchInput.value.trim();
+    const searchType = getSearchType();
+    lastSearchQueryValue = query;
+    lastSearchTypeValue = searchType;
+
+    if (!query) {
+      resultsContainer.innerHTML = '<p class="uyari-mesaji">Lütfen arama terimi girin.</p>';
+      return;
+    }
+
+    if (searchType === 'film') {
+      searchMovies(query);
+    } else if (searchType === 'actor') {
+      searchActorMovies(query);
+    } else if (searchType === 'genreSorted') {
+      searchByGenreSorted(query);
+    }
+  });
+
+  searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') searchButton.click();
+  });
+
+  window.addEventListener('DOMContentLoaded', async () => {
+    genres = await fetchGenres();
+
+    const lastSearch = getLastSearch();
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchQueryFromUrl = urlParams.get('search');
+    const searchTypeFromUrl = urlParams.get('searchType');
+
+    if (searchQueryFromUrl) {
+      searchInput.value = searchQueryFromUrl;
+      for (const radio of searchTypeRadios) {
+        if (radio.value === searchTypeFromUrl) {
+          radio.checked = true;
+          break;
+        }
+      }
+      lastSearchQueryValue = searchQueryFromUrl;
+      lastSearchTypeValue = searchTypeFromUrl;
+      if (searchTypeFromUrl === 'film') {
+        searchMovies(searchQueryFromUrl);
+      } else if (searchTypeFromUrl === 'actor') {
+        searchActorMovies(searchQueryFromUrl);
+      } else if (searchTypeFromUrl === 'genreSorted') {
+        searchByGenreSorted(searchQueryFromUrl);
+      }
+    } else if (lastSearch.query && lastSearch.type) {
+      searchInput.value = lastSearch.query;
+      for (const radio of searchTypeRadios) {
+        if (radio.value === lastSearch.type) {
+          radio.checked = true;
+          break;
+        }
+      }
+      lastSearchQueryValue = lastSearch.query;
+      lastSearchTypeValue = lastSearch.type;
+      if (lastSearch.type === 'film') {
+        searchMovies(lastSearch.query);
+      } else if (lastSearch.type === 'actor') {
+        searchActorMovies(lastSearch.query);
+      } else if (lastSearch.type === 'genreSorted') {
+        searchByGenreSorted(lastSearch.query);
+      }
+    } else {
+      // Eğer ne URL'de ne de localStorage'da arama varsa, varsayılan bir mesaj gösterebilirsiniz.
+      resultsContainer.innerHTML = '<p class="uyari-mesaji">Arama yapmak için yukarıdaki kutuyu kullanın.</p>';
+    }
+
+    // Favorileri sayfa yüklendiğinde otomatik olarak göstermek isterseniz aşağıdaki satırı açabilirsiniz.
+    // showFavoritesBtn.click();
+  });
+</script>
+</body>
+</html>
