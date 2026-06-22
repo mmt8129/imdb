@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Film Bilgisi</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      color: #222;
+      padding-bottom: 70px;
+    }
+    /* Alt sabit arama çubuğu */
+    #search-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: #fff;
+      border-top: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      padding: 0 5px;
+      z-index: 3000;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+      gap: 8px;
+    }
+    #search-bar input {
+      flex: 1;
+      height: 40px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+      padding: 0 1px;
+      background: transparent;
+    }
+    #search-bar input::placeholder {
+      color: #aaa;
+    }
+    /* Arama simgesi sağda */
+    #search-bar .search-icon {
+      font-size: 22px;
+      color: #555;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0 3px;
+      order: 2; /* sağa al */
+    }
+    #search-bar .search-icon:hover { color: #e50914; }
+    #search-bar input {
+      order: 1; /* solda */
+    }
+    #search-type {
+      order: 0; /* en solda */
+      height: 34px;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      padding: 0 12px;
+      font-size: 14px;
+      background: #fff;
+      color: #333;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23555" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>');
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      padding-right: 28px;
+      flex-shrink: 0;
+    }
+    /* Sayfa konteyner */
+    .page {
+      display: none;
+      padding: 12px;
+      animation: fade 0.2s;
+    }
+    .page.active { display: block; }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+    /* Ana liste kartı (Rambo tarzı) */
+    .list-card {
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      display: flex;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .list-card:active { transform: scale(0.98); }
+    .list-card img {
+      width: 120px;
+      min-height: 120px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .list-card .info {
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      flex: 1;
+    }
+    .list-card .info .title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .list-card .info .meta {
+      font-size: 13px;
+      color: #777;
+      margin-bottom: 6px;
+    }
+    .list-card .info .meta .imdb {
+      background: #f5c518;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 700;
+      color: #000;
+      display: inline-block;
+      font-size: 12px;
+      margin-right: 6px;
+    }
+    .list-card .info .overview {
+      font-size: 14px;
+      color: #555;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    /* Detay sayfası */
+    .detail-poster-wrap {
+      position: relative;
+      width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .detail-poster-wrap img {
+      width: 100%;
+      display: block;
+      border-radius: 16px;
+    }
+    .detail-poster-wrap .google-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      opacity: 0;
+      transition: 0.3s;
+      border-radius: 16px;
+      cursor: pointer;
+    }
+    .detail-poster-wrap:hover .google-overlay,
+    .detail-poster-wrap:active .google-overlay {
+      opacity: 1;
+    }
+    .google-overlay span {
+      background: #fff;
+      padding: 10px 20px;
+      border-radius: 40px;
+      font-weight: 700;
+      color: #333;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .detail-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .detail-original {
+      font-size: 16px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    .detail-meta {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 12px;
+    }
+    .detail-overview {
+      font-size: 16px;
+      line-height: 1.5;
+      color: #333;
+      margin-bottom: 20px;
+      background: #fff;
+      padding: 14px;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .detail-section-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    /* Yatay oyuncu kartları */
+    .actor-scroll {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scrollbar-width: none;
+    }
+    .actor-scroll::-webkit-scrollbar { display: none; }
+    .actor-card {
+      flex: 0 0 100px;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      cursor: pointer;
+      text-align: center;
+      padding-bottom: 6px;
+    }
+    .actor-card img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+    }
+    .actor-card .name {
+      font-size: 13px;
+      font-weight: 600;
+      margin: 4px 0 0;
+    }
+    .actor-card .char {
+      font-size: 11px;
+      color: #777;
+    }
+    /* Oyuncu detay sayfası */
+    .actor-detail-header {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .actor-detail-header img {
+      width: 100px;
+      height: 140px;
+      object-fit: cover;
+      border-radius: 12px;
+    }
+    .actor-detail-header .bio {
+      flex: 1;
+      font-size: 14px;
+      line-height: 1.4;
+      color: #444;
+    }
+    .msg {
+      text-align: center;
+      padding: 30px 10px;
+      color: #888;
+      font-size: 16px;
+    }
+    .back-btn {
+      background: none;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      padding: 4px 0 12px 0;
+      display: block;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sayfalar -->
+<div id="page-list" class="page active"></div>
+<div id="page-detail" class="page"></div>
+<div id="page-actor" class="page"></div>
+
+<!-- Alt sabit arama çubuğu -->
+<div id="search-bar">
+  <select id="search-type">
+    <option value="film">Film</option>
+    <option value="actor">Oyuncu</option>
+  </select>
+  <input type="text" id="search-input" placeholder="Film ya da oyuncu adı giriniz..." autocomplete="off" />
+  <button class="search-icon" id="search-btn">🔍</button>
+</div>
+
+<script>
+  const API_KEY = '4914230c4aaf1ff8599a892b0dfc71f4';
+  const IMG_URL = 'https://image.tmdb.org/t/p/w500';
+
+  const pageList = document.getElementById('page-list');
+  const pageDetail = document.getElementById('page-detail');
+  const pageActor = document.getElementById('page-actor');
+  const searchInput = document.getElementById('search-input');
+  const searchBtn = document.getElementById('search-btn');
+  const searchType = document.getElementById('search-type');
+
+  let pageHistory = ['list'];
+
+  function showPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+  }
+
+  window.addEventListener('popstate', () => {
+    if (pageHistory.length > 1) {
+      pageHistory.pop();
+      const prev = pageHistory[pageHistory.length - 1];
+      showPage(prev);
+      if (prev === 'page-list') renderLastSearch();
+    }
+  });
+
+  function navigateTo(pageId) {
+    pageHistory.push(pageId);
+    showPage(pageId);
+    history.pushState(null, '', '#' + pageId);
+  }
+
+  // --- ARAMA ---
+  async function doSearch(query, type) {
+    if (!query.trim()) return;
+    if (type === 'film') {
+      const results = await searchFilm(query);
+      renderList(results);
+    } else {
+      const results = await searchActor(query);
+      renderList(results);
+    }
+  }
+
+  async function searchFilm(q) {
+    try {
+      const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(q)}&language=tr-TR`);
+      const data = await res.json();
+      return data.results || [];
+    } catch { return []; }
+  }
+
+  async function searchActor(q) {
+    try {
+      const res = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${API_KEY}&query=${encodeURIComponent(q)}&language=tr-TR`);
+      const data = await res.json();
+      if (!data.results || data.results.length === 0) return [];
+      const person = data.results[0];
+      const credits = await fetch(`https://api.themoviedb.org/3/person/${person.id}/movie_credits?api_key=${API_KEY}&language=tr-TR`);
+      const cred = await credits.json();
+      return (cred.cast || []).filter(m => m.release_date && m.title).sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
+    } catch { return []; }
+  }
+
+  function renderList(items) {
+    pageList.innerHTML = '';
+    if (!items || items.length === 0) {
+      pageList.innerHTML = '<div class="msg">Sonuç bulunamadı.</div>';
+      return;
+    }
+    items.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'list-card';
+      const poster = item.poster_path ? IMG_URL + item.poster_path : 'https://via.placeholder.com/200x300?text=No+Image';
+      const title = item.title || item.original_title || item.name || 'Bilinmiyor';
+      const year = item.release_date ? item.release_date.slice(0,4) : '';
+      const imdb = item.vote_average ? item.vote_average.toFixed(1) : '-';
+      const overview = item.overview || 'Açıklama yok.';
+      card.innerHTML = `
+        <img src="${poster}" alt="${title}" />
+        <div class="info">
+          <div class="title">${title}</div>
+          <div class="meta"><span class="imdb">⭐ ${imdb}</span> ${year}</div>
+          <div class="overview">${overview}</div>
+        </div>
+      `;
+      card.addEventListener('click', () => {
+        if (item.id && item.title) showDetail(item.id);
+        else if (item.id && item.name && !item.title) showActorDetail(item.id);
+        else showDetail(item.id);
+      });
+      pageList.appendChild(card);
+    });
+    navigateTo('page-list');
+  }
+
+  function renderLastSearch() {
+    const q = searchInput.value.trim();
+    const type = searchType.value;
+    if (q) doSearch(q, type);
+  }
+
+  searchBtn.addEventListener('click', () => {
+    doSearch(searchInput.value.trim(), searchType.value);
+  });
+  searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') doSearch(searchInput.value.trim(), searchType.value);
+  });
+
+  // --- FİLM DETAY ---
+  async function showDetail(movieId) {
+    pageDetail.innerHTML = '<div class="msg">Yükleniyor...</div>';
+    navigateTo('page-detail');
+    try {
+      const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
+      const movie = await res.json();
+      const poster = movie.poster_path ? IMG_URL + movie.poster_path : 'https://via.placeholder.com/500x750?text=No+Image';
+      let html = `
+        <button class="back-btn" onclick="goBack()">‹</button>
+        <div class="detail-poster-wrap">
+          <img src="${poster}" alt="${movie.title}" />
+          <div class="google-overlay" onclick="window.open('https://www.google.com/search?q=${encodeURIComponent(movie.title + ' full izle')}','_blank')">
+            <span>🔍 Google'da Ara</span>
+          </div>
+        </div>
+        <div class="detail-title">${movie.title}</div>
+        <div class="detail-original">${movie.original_title || ''}</div>
+        <div class="detail-meta">${movie.release_date ? movie.release_date.slice(0,4) : ''} · ${movie.genres ? movie.genres.map(g => g.name).join(', ') : ''}</div>
+        <div class="detail-overview">${movie.overview || 'Konu yok.'}</div>
+        <div class="detail-section-title">Oyuncular</div>
+        <div class="actor-scroll">
+      `;
+      const cast = movie.credits?.cast || [];
+      cast.slice(0, 12).forEach(actor => {
+        const img = actor.profile_path ? IMG_URL + actor.profile_path : 'https://via.placeholder.com/100x120?text=No+Image';
+        html += `
+          <div class="actor-card" onclick="showActorDetail(${actor.id})">
+            <img src="${img}" alt="${actor.name}" />
+            <div class="name">${actor.name}</div>
+            <div class="char">${actor.character || ''}</div>
+          </div>
+        `;
+      });
+      html += `</div>`;
+      pageDetail.innerHTML = html;
+    } catch (e) {
+      pageDetail.innerHTML = '<div class="msg">Hata oluştu.</div>';
+    }
+  }
+
+  // --- OYUNCU DETAY ---
+  async function showActorDetail(personId) {
+    pageActor.innerHTML = '<div class="msg">Yükleniyor...</div>';
+    navigateTo('page-actor');
+    try {
+      const res = await fetch(`https://api.themoviedb.org/3/person/${personId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
+      const person = await res.json();
+      const img = person.profile_path ? IMG_URL + person.profile_path : 'https://via.placeholder.com/100x140?text=No+Image';
+      let html = `
+        <button class="back-btn" onclick="goBack()">‹</button>
+        <div class="actor-detail-header">
+          <img src="${img}" alt="${person.name}" />
+          <div class="bio">
+            <h2>${person.name}</h2>
+            <p>${person.biography || 'Biyografi yok.'}</p>
+          </div>
+        </div>
+        <div class="detail-section-title">Filmleri</div>
+      `;
+      const movies = person.credits?.cast || [];
+      movies.sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
+      movies.slice(0, 20).forEach(m => {
+        const poster = m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No+Image';
+        html += `
+          <div class="list-card" onclick="showDetail(${m.id})">
+            <img src="${poster}" alt="${m.title}" />
+            <div class="info">
+              <div class="title">${m.title}</div>
+              <div class="meta">${m.release_date ? m.release_date.slice(0,4) : ''} · ⭐ ${m.vote_average ? m.vote_average.toFixed(1) : '-'}</div>
+            </div>
+          </div>
+        `;
+      });
+      pageActor.innerHTML = html;
+    } catch (e) {
+      pageActor.innerHTML = '<div class="msg">Hata oluştu.</div>';
+    }
+  }
+
+  function goBack() {
+    if (pageHistory.length > 1) {
+      pageHistory.pop();
+      const prev = pageHistory[pageHistory.length - 1];
+      showPage(prev);
+      history.back();
+    }
+  }
+
+  // Başlangıç
+  searchInput.focus();
+  pageList.innerHTML = '<div class="msg">Aramak için aşağıya yazın ve türü seçin.</div>';
+</script>
+</body>
+</html>
