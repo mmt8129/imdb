@@ -185,7 +185,7 @@
     #main-modal {
       position: fixed;
       inset: 0;
-      background: #ffffff; /* Beyaz arka plan */
+      background: #ffffff;
       z-index: 4000;
       display: none;
       flex-direction: column;
@@ -471,6 +471,7 @@
   let tabTotalPages = { now_playing: 1, top_rated: 1, popular: 1 };
   let savedScrollY = 0;
   let savedSearchScrollTop = 0;
+  let isInDetail = false; // Detay katmanında mıyız?
 
   // --- MODAL AÇ/KAPAT ---
   function openModal() {
@@ -480,9 +481,11 @@
   function closeModal() {
     mainModal.classList.remove('active');
     document.body.style.overflow = '';
+    isInDetail = false; // Modal tamamen kapanınca detay durumu sıfırla
+    // Resim ve fragman modaları varsa kapat
     if (imageViewer.classList.contains('active')) closeImageViewer();
     if (trailerModal.classList.contains('active')) closeTrailer();
-    // Ana sayfaya dönünce scroll'u geri yükle
+    // Scroll'u geri yükle (sadece ana sayfadan detaya gidildiyse)
     if (savedScrollY > 0) {
       requestAnimationFrame(() => { window.scrollTo(0, savedScrollY); });
       savedScrollY = 0;
@@ -493,6 +496,7 @@
   function showSearchLayer() {
     layerSearch.style.display = 'block';
     layerDetail.style.display = 'none';
+    isInDetail = false;
     const searchContainer = layerSearch.querySelector('.search-container');
     if (searchContainer) {
       requestAnimationFrame(() => {
@@ -503,6 +507,7 @@
   function showDetailLayer() {
     layerSearch.style.display = 'none';
     layerDetail.style.display = 'block';
+    isInDetail = true;
   }
 
   // --- RESİM & FRAGMAN ---
@@ -612,7 +617,7 @@
     }
   }
 
-  // --- ARAMA SONUÇLARI (Kapat butonu yok, Ana Sayfaya Dön var) ---
+  // --- ARAMA SONUÇLARI ---
   function showSearchResults(items, query) {
     savedSearchScrollTop = layerSearch.scrollTop;
     
@@ -647,9 +652,9 @@
           </div>
         `;
         card.addEventListener('click', () => {
-          if (item.title) openDetailFromSearch(item.id);
-          else if (item.name) openActorDetailFromSearch(item.id);
-          else openDetailFromSearch(item.id);
+          if (item.title) openDetail(item.id, 'movie');
+          else if (item.name) openDetail(item.id, 'actor');
+          else openDetail(item.id, 'movie');
         });
         container.appendChild(card);
       });
@@ -658,177 +663,80 @@
     openModal();
   }
 
-  // --- ARAMA'DAN DETAY AÇ ---
-  async function openDetailFromSearch(movieId) {
+  // --- ORTAK DETAY AÇMA FONKSİYONU ---
+  async function openDetail(id, type = 'movie') {
     layerDetail.innerHTML = '<div class="msg" style="color:#888;">Yükleniyor...</div>';
     showDetailLayer();
+    openModal(); // Modal zaten açıksa tekrar açmaz, açık değilse açar
     try {
-      const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits,videos`);
-      const movie = await res.json();
-      const poster = movie.poster_path ? IMG_URL + movie.poster_path : 'https://via.placeholder.com/500x750?text=No+Image';
-      const trailer = movie.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
-      
-      let html = `
-        <div class="modal-poster-wrap">
-          <img src="${poster}" alt="${movie.title}" id="m-poster" />
-        </div>
-        <div class="modal-actions">
-          <button class="google-btn" onclick="window.open('https://www.google.com/search?q=${encodeURIComponent(movie.title + ' full izle')}','_blank')">Filmi İzle</button>
-          ${trailer ? `<button class="trailer-btn" onclick="openTrailer('${trailer.key}')">Fragmanı İzle</button>` : ''}
-        </div>
-        <div class="modal-title">${movie.title}</div>
-        <div class="modal-original">${movie.original_title || ''}</div>
-        <div class="modal-meta">${movie.release_date ? movie.release_date.slice(0,4) : ''} · ${movie.genres ? movie.genres.map(g => g.name).join(', ') : ''}</div>
-        <div class="modal-overview">${movie.overview || 'Konu yok.'}</div>
-        <div class="modal-section-title">Oyuncular</div>
-        <div class="actor-scroll">
-      `;
-      const cast = movie.credits?.cast || [];
-      cast.slice(0, 12).forEach(actor => {
-        const img = actor.profile_path ? IMG_URL + actor.profile_path : 'https://via.placeholder.com/100x120?text=No+Image';
-        html += `
-          <div class="actor-card" onclick="openActorDetailFromSearch(${actor.id})">
-            <img src="${img}" alt="${actor.name}" />
-            <div class="name">${actor.name}</div>
-            <div class="char">${actor.character || ''}</div>
+      if (type === 'movie') {
+        const res = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits,videos`);
+        const movie = await res.json();
+        const poster = movie.poster_path ? IMG_URL + movie.poster_path : 'https://via.placeholder.com/500x750?text=No+Image';
+        const trailer = movie.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+        
+        let html = `
+          <div class="modal-poster-wrap">
+            <img src="${poster}" alt="${movie.title}" id="m-poster" />
           </div>
+          <div class="modal-actions">
+            <button class="google-btn" onclick="window.open('https://www.google.com/search?q=${encodeURIComponent(movie.title + ' full izle')}','_blank')">Filmi İzle</button>
+            ${trailer ? `<button class="trailer-btn" onclick="openTrailer('${trailer.key}')">Fragmanı İzle</button>` : ''}
+          </div>
+          <div class="modal-title">${movie.title}</div>
+          <div class="modal-original">${movie.original_title || ''}</div>
+          <div class="modal-meta">${movie.release_date ? movie.release_date.slice(0,4) : ''} · ${movie.genres ? movie.genres.map(g => g.name).join(', ') : ''}</div>
+          <div class="modal-overview">${movie.overview || 'Konu yok.'}</div>
+          <div class="modal-section-title">Oyuncular</div>
+          <div class="actor-scroll">
         `;
-      });
-      html += `</div>`;
-      layerDetail.innerHTML = html;
+        const cast = movie.credits?.cast || [];
+        cast.slice(0, 12).forEach(actor => {
+          const img = actor.profile_path ? IMG_URL + actor.profile_path : 'https://via.placeholder.com/100x120?text=No+Image';
+          html += `
+            <div class="actor-card" onclick="openDetail(${actor.id}, 'actor')">
+              <img src="${img}" alt="${actor.name}" />
+              <div class="name">${actor.name}</div>
+              <div class="char">${actor.character || ''}</div>
+            </div>
+          `;
+        });
+        html += `</div>`;
+        layerDetail.innerHTML = html;
 
-      document.getElementById('m-poster').addEventListener('click', () => {
-        openImageViewer(poster);
-      });
-    } catch {
-      layerDetail.innerHTML = '<div class="msg" style="color:#888;">Hata oluştu.</div>';
-    }
-  }
-
-  // --- ARAMA'DAN OYUNCU DETAYI AÇ ---
-  async function openActorDetailFromSearch(personId) {
-    layerDetail.innerHTML = '<div class="msg" style="color:#888;">Yükleniyor...</div>';
-    showDetailLayer();
-    try {
-      const res = await fetch(`https://api.themoviedb.org/3/person/${personId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
-      const person = await res.json();
-      const img = person.profile_path ? IMG_URL + person.profile_path : 'https://via.placeholder.com/100x140?text=No+Image';
-      let html = `
-        <div class="actor-detail-header">
-          <img src="${img}" alt="${person.name}" />
-          <div class="bio">
-            <h2>${person.name}</h2>
-            <p>${person.biography || 'Biyografi yok.'}</p>
-          </div>
-        </div>
-        <div class="modal-section-title">Filmleri</div>
-      `;
-      const movies = person.credits?.cast || [];
-      movies.sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
-      movies.slice(0, 20).forEach(m => {
-        const poster = m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No+Image';
-        html += `
-          <div class="list-card" onclick="closeModal(); setTimeout(() => openDetailFromSearch(${m.id}), 100);">
-            <img src="${poster}" alt="${m.title}" />
-            <div class="info">
-              <div class="title" style="color:#333;">${m.title}</div>
-              <div class="meta">${m.release_date ? m.release_date.slice(0,4) : ''} · ⭐ ${m.vote_average ? m.vote_average.toFixed(1) : '-'}</div>
+        document.getElementById('m-poster').addEventListener('click', () => {
+          openImageViewer(poster);
+        });
+      } else { // actor
+        const res = await fetch(`https://api.themoviedb.org/3/person/${id}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
+        const person = await res.json();
+        const img = person.profile_path ? IMG_URL + person.profile_path : 'https://via.placeholder.com/100x140?text=No+Image';
+        let html = `
+          <div class="actor-detail-header">
+            <img src="${img}" alt="${person.name}" />
+            <div class="bio">
+              <h2>${person.name}</h2>
+              <p>${person.biography || 'Biyografi yok.'}</p>
             </div>
           </div>
+          <div class="modal-section-title">Filmleri</div>
         `;
-      });
-      layerDetail.innerHTML = html;
-    } catch {
-      layerDetail.innerHTML = '<div class="msg" style="color:#888;">Hata oluştu.</div>';
-    }
-  }
-
-  // --- ANA SAYFADAN DETAY AÇ ---
-  async function showDetail(movieId) {
-    savedScrollY = window.scrollY;
-    layerDetail.innerHTML = '<div class="msg" style="color:#888;">Yükleniyor...</div>';
-    layerSearch.style.display = 'none';
-    showDetailLayer();
-    openModal();
-    try {
-      const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits,videos`);
-      const movie = await res.json();
-      const poster = movie.poster_path ? IMG_URL + movie.poster_path : 'https://via.placeholder.com/500x750?text=No+Image';
-      const trailer = movie.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
-      
-      let html = `
-        <div class="modal-poster-wrap">
-          <img src="${poster}" alt="${movie.title}" id="m-poster" />
-        </div>
-        <div class="modal-actions">
-          <button class="google-btn" onclick="window.open('https://www.google.com/search?q=${encodeURIComponent(movie.title + ' full izle')}','_blank')">Filmi İzle</button>
-          ${trailer ? `<button class="trailer-btn" onclick="openTrailer('${trailer.key}')">Fragmanı İzle</button>` : ''}
-        </div>
-        <div class="modal-title">${movie.title}</div>
-        <div class="modal-original">${movie.original_title || ''}</div>
-        <div class="modal-meta">${movie.release_date ? movie.release_date.slice(0,4) : ''} · ${movie.genres ? movie.genres.map(g => g.name).join(', ') : ''}</div>
-        <div class="modal-overview">${movie.overview || 'Konu yok.'}</div>
-        <div class="modal-section-title">Oyuncular</div>
-        <div class="actor-scroll">
-      `;
-      const cast = movie.credits?.cast || [];
-      cast.slice(0, 12).forEach(actor => {
-        const img = actor.profile_path ? IMG_URL + actor.profile_path : 'https://via.placeholder.com/100x120?text=No+Image';
-        html += `
-          <div class="actor-card" onclick="openActorDetailFromSearch(${actor.id})">
-            <img src="${img}" alt="${actor.name}" />
-            <div class="name">${actor.name}</div>
-            <div class="char">${actor.character || ''}</div>
-          </div>
-        `;
-      });
-      html += `</div>`;
-      layerDetail.innerHTML = html;
-
-      document.getElementById('m-poster').addEventListener('click', () => {
-        openImageViewer(poster);
-      });
-    } catch {
-      layerDetail.innerHTML = '<div class="msg" style="color:#888;">Hata oluştu.</div>';
-    }
-  }
-
-  // --- ANA SAYFADAN OYUNCU DETAYI ---
-  async function showActorDetailFromMain(personId) {
-    savedScrollY = window.scrollY;
-    layerDetail.innerHTML = '<div class="msg" style="color:#888;">Yükleniyor...</div>';
-    layerSearch.style.display = 'none';
-    showDetailLayer();
-    openModal();
-    try {
-      const res = await fetch(`https://api.themoviedb.org/3/person/${personId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
-      const person = await res.json();
-      const img = person.profile_path ? IMG_URL + person.profile_path : 'https://via.placeholder.com/100x140?text=No+Image';
-      let html = `
-        <div class="actor-detail-header">
-          <img src="${img}" alt="${person.name}" />
-          <div class="bio">
-            <h2>${person.name}</h2>
-            <p>${person.biography || 'Biyografi yok.'}</p>
-          </div>
-        </div>
-        <div class="modal-section-title">Filmleri</div>
-      `;
-      const movies = person.credits?.cast || [];
-      movies.sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
-      movies.slice(0, 20).forEach(m => {
-        const poster = m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No+Image';
-        html += `
-          <div class="list-card" onclick="closeModal(); setTimeout(() => showDetail(${m.id}), 100);">
-            <img src="${poster}" alt="${m.title}" />
-            <div class="info">
-              <div class="title" style="color:#333;">${m.title}</div>
-              <div class="meta">${m.release_date ? m.release_date.slice(0,4) : ''} · ⭐ ${m.vote_average ? m.vote_average.toFixed(1) : '-'}</div>
+        const movies = person.credits?.cast || [];
+        movies.sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
+        movies.slice(0, 20).forEach(m => {
+          const poster = m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No+Image';
+          html += `
+            <div class="list-card" onclick="closeModal(); setTimeout(() => openDetail(${m.id}, 'movie'), 100);">
+              <img src="${poster}" alt="${m.title}" />
+              <div class="info">
+                <div class="title" style="color:#333;">${m.title}</div>
+                <div class="meta">${m.release_date ? m.release_date.slice(0,4) : ''} · ⭐ ${m.vote_average ? m.vote_average.toFixed(1) : '-'}</div>
+              </div>
             </div>
-          </div>
-        `;
-      });
-      layerDetail.innerHTML = html;
+          `;
+        });
+        layerDetail.innerHTML = html;
+      }
     } catch {
       layerDetail.innerHTML = '<div class="msg" style="color:#888;">Hata oluştu.</div>';
     }
@@ -843,7 +751,8 @@
     }
     items.forEach(item => { pageList.appendChild(createListCard(item)); });
     if (!fromSearch && !isSearchMode) updateLoadMore(currentTab);
-    if (savedScrollY > 0) {
+    // Scroll geri yükleme: sadece ana sayfadan dönüldüyse ve savedScrollY varsa
+    if (savedScrollY > 0 && !isInDetail) {
       requestAnimationFrame(() => { window.scrollTo(0, savedScrollY); });
       savedScrollY = 0;
     }
@@ -868,18 +777,29 @@
     `;
     card.addEventListener('click', () => {
       savedScrollY = window.scrollY;
-      if (item.title) showDetail(item.id);
-      else if (item.name) showActorDetailFromMain(item.id);
-      else showDetail(item.id);
+      if (item.title) openDetail(item.id, 'movie');
+      else if (item.name) openDetail(item.id, 'actor');
+      else openDetail(item.id, 'movie');
     });
     return card;
   }
 
   // --- OLAY DİNLEYİCİLERİ ---
   modalCloseDetail.addEventListener('click', () => {
-    // Detay katmanı açıksa veya herhangi bir durumda, ana sayfaya dön (tek tık)
     if (mainModal.classList.contains('active')) {
-      closeModal(); // Detay katmanından direkt ana sayfaya dön
+      if (isInDetail) {
+        // Detay katmanındaysak, arama katmanına geri dön (ama arama modunda değilsek?)
+        // Detay katmanındaysak ve arama modundaysak, arama sonuçlarına dön
+        if (isSearchMode) {
+          showSearchLayer();
+        } else {
+          // Ana sayfadan detaya geldiysek, modalı kapatıp ana sayfaya dön
+          closeModal();
+        }
+      } else {
+        // Arama katmanındaysak, direkt kapat (ana sayfaya dön)
+        closeModal();
+      }
     }
   });
 
