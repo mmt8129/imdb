@@ -8,7 +8,7 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: Arial, sans-serif;
       background: #f5f5f5;
       color: #222;
       padding-bottom: 80px;
@@ -161,7 +161,7 @@
     }
     .load-more-btn:active { transform: scale(0.97); }
 
-    /* --- ORTAK MODAL (İki katmanlı) --- */
+    /* --- MODAL --- */
     #main-modal {
       position: fixed;
       inset: 0;
@@ -170,7 +170,6 @@
       display: none;
       flex-direction: column;
       overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
     }
     #main-modal.active { display: flex; }
     
@@ -191,7 +190,9 @@
       cursor: pointer;
       padding: 4px 8px;
       line-height: 1;
+      display: none; /* default gizli */
     }
+    #modal-close.visible { display: block; }
     
     #modal-body {
       padding: 0 16px 40px 16px;
@@ -199,33 +200,10 @@
       position: relative;
     }
     
-    /* --- İki Katman (Arama Sonuçları ve Detay) --- */
-    #layer-search {
-      display: block;
-    }
-    #layer-detail {
-      display: none;
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: #1a1a1a;
-      padding: 0 16px 40px 16px;
-      z-index: 5;
-    }
-    
-    /* --- Arama Sonuçları Başlığı --- */
-    .search-header {
-      margin-bottom: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .search-header span {
-      font-size: 20px;
-      font-weight: 700;
-      color: #fff;
-    }
+    #layer-search { display: block; }
+    #layer-detail { display: none; }
 
-    /* --- Detay içi stiller --- */
+    /* --- Detay içi --- */
     .modal-poster-wrap {
       position: relative;
       width: 100%;
@@ -387,26 +365,21 @@
   </div>
 </div>
 
-<!-- ANA MODAL (İki katmanlı) -->
 <div id="main-modal">
   <div id="modal-header">
     <button id="modal-close">✕</button>
   </div>
   <div id="modal-body">
-    <!-- Katman 1: Arama Sonuçları -->
     <div id="layer-search"></div>
-    <!-- Katman 2: Detay (üstte görünür) -->
     <div id="layer-detail"></div>
   </div>
 </div>
 
-<!-- RESİM GÖRÜNTÜLEYİCİ -->
 <div id="image-viewer">
   <button class="close-img" id="close-img">✕</button>
   <img id="viewer-img" src="" alt="Resim" />
 </div>
 
-<!-- FRAGMAN -->
 <div id="trailer-modal">
   <button class="close-trl" id="close-trl">✕</button>
   <iframe id="trailer-iframe" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
@@ -441,36 +414,34 @@
   let tabTotalPages = { now_playing: 1, top_rated: 1, popular: 1 };
   let savedScrollY = 0;
 
-  // --- MODAL YÖNETİMİ ---
-  function openMainModal() {
+  // --- MODAL AÇ/KAPAT ---
+  function openModal() {
     mainModal.classList.add('active');
     document.body.style.overflow = 'hidden';
   }
-  function closeMainModal() {
+  function closeModal() {
     mainModal.classList.remove('active');
     document.body.style.overflow = '';
-    // Tüm katmanları sıfırla
-    layerSearch.style.display = 'block';
-    layerDetail.style.display = 'none';
-    layerDetail.innerHTML = '';
     if (imageViewer.classList.contains('active')) closeImageViewer();
     if (trailerModal.classList.contains('active')) closeTrailer();
+    
     // Ana sayfaya dönünce scroll'u geri yükle
     if (savedScrollY > 0) {
       requestAnimationFrame(() => { window.scrollTo(0, savedScrollY); });
       savedScrollY = 0;
     }
   }
-  modalClose.addEventListener('click', closeMainModal);
 
   // --- KATMAN GEÇİŞİ ---
   function showSearchLayer() {
     layerSearch.style.display = 'block';
     layerDetail.style.display = 'none';
+    modalClose.classList.remove('visible');
   }
   function showDetailLayer() {
     layerSearch.style.display = 'none';
     layerDetail.style.display = 'block';
+    modalClose.classList.add('visible');
   }
 
   // --- RESİM & FRAGMAN ---
@@ -502,7 +473,7 @@
     if (e.target === trailerModal) closeTrailer();
   });
 
-  // --- SEKME YÜKLEME ---
+  // --- SEKME ---
   async function loadTab(tab, page = 1, append = false) {
     currentTab = tab;
     isSearchMode = false;
@@ -578,11 +549,11 @@
     }
   }
 
-  // --- ARAMA SONUÇLARINI GÖSTER (Katman 1) ---
+  // --- ARAMA SONUÇLARI ---
   function showSearchResults(items, query) {
     layerSearch.innerHTML = `
-      <div class="search-header">
-        <span>"${query}" için sonuçlar</span>
+      <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 20px; font-weight: 700; color: #fff;">"${query}" için sonuçlar</span>
       </div>
     `;
     if (!items || items.length === 0) {
@@ -607,17 +578,17 @@
         `;
         card.addEventListener('click', () => {
           if (item.title) openDetailFromSearch(item.id);
-          else if (item.name) showActorDetail(item.id);
+          else if (item.name) openActorDetailFromSearch(item.id);
           else openDetailFromSearch(item.id);
         });
         layerSearch.appendChild(card);
       });
     }
     showSearchLayer();
-    openMainModal();
+    openModal();
   }
 
-  // --- ARAMA'DAN DETAY AÇ (Katman 2'ye geçer) ---
+  // --- ARAMA'DAN DETAY AÇ ---
   async function openDetailFromSearch(movieId) {
     layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Yükleniyor...</div>';
     showDetailLayer();
@@ -646,7 +617,7 @@
       cast.slice(0, 12).forEach(actor => {
         const img = actor.profile_path ? IMG_URL + actor.profile_path : 'https://via.placeholder.com/100x120?text=No+Image';
         html += `
-          <div class="actor-card" onclick="showActorDetail(${actor.id})">
+          <div class="actor-card" onclick="openActorDetailFromSearch(${actor.id})">
             <img src="${img}" alt="${actor.name}" />
             <div class="name">${actor.name}</div>
             <div class="char">${actor.character || ''}</div>
@@ -664,6 +635,44 @@
     }
   }
 
+  // --- ARAMA'DAN OYUNCU DETAYI AÇ ---
+  async function openActorDetailFromSearch(personId) {
+    layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Yükleniyor...</div>';
+    showDetailLayer();
+    try {
+      const res = await fetch(`https://api.themoviedb.org/3/person/${personId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
+      const person = await res.json();
+      const img = person.profile_path ? IMG_URL + person.profile_path : 'https://via.placeholder.com/100x140?text=No+Image';
+      let html = `
+        <div class="actor-detail-header">
+          <img src="${img}" alt="${person.name}" />
+          <div class="bio">
+            <h2>${person.name}</h2>
+            <p>${person.biography || 'Biyografi yok.'}</p>
+          </div>
+        </div>
+        <div class="modal-section-title">Filmleri</div>
+      `;
+      const movies = person.credits?.cast || [];
+      movies.sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
+      movies.slice(0, 20).forEach(m => {
+        const poster = m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No+Image';
+        html += `
+          <div class="list-card" onclick="closeModal(); setTimeout(() => openDetailFromSearch(${m.id}), 100);">
+            <img src="${poster}" alt="${m.title}" />
+            <div class="info">
+              <div class="title" style="color:#222;">${m.title}</div>
+              <div class="meta">${m.release_date ? m.release_date.slice(0,4) : ''} · ⭐ ${m.vote_average ? m.vote_average.toFixed(1) : '-'}</div>
+            </div>
+          </div>
+        `;
+      });
+      layerDetail.innerHTML = html;
+    } catch {
+      layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Hata oluştu.</div>';
+    }
+  }
+
   // --- ANA SAYFADAN DETAY AÇ ---
   async function showDetail(movieId) {
     savedScrollY = window.scrollY;
@@ -671,7 +680,7 @@
     // Ana sayfadan direkt detay açılırsa, arama katmanını gizle
     layerSearch.style.display = 'none';
     showDetailLayer();
-    openMainModal();
+    openModal();
     try {
       const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits,videos`);
       const movie = await res.json();
@@ -697,7 +706,7 @@
       cast.slice(0, 12).forEach(actor => {
         const img = actor.profile_path ? IMG_URL + actor.profile_path : 'https://via.placeholder.com/100x120?text=No+Image';
         html += `
-          <div class="actor-card" onclick="showActorDetail(${actor.id})">
+          <div class="actor-card" onclick="openActorDetailFromSearch(${actor.id})">
             <img src="${img}" alt="${actor.name}" />
             <div class="name">${actor.name}</div>
             <div class="char">${actor.character || ''}</div>
@@ -710,52 +719,6 @@
       document.getElementById('m-poster').addEventListener('click', () => {
         openImageViewer(poster);
       });
-    } catch {
-      layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Hata oluştu.</div>';
-    }
-  }
-
-  // --- OYUNCU DETAYI ---
-  async function showActorDetail(personId) {
-    // Eğer bu fonksiyon arama katmanından çağrıldıysa, detay katmanını aç
-    if (layerSearch.style.display !== 'none') {
-      layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Yükleniyor...</div>';
-      showDetailLayer();
-    } else {
-      // Ana sayfadan çağrıldıysa direkt modal aç
-      layerSearch.style.display = 'none';
-      showDetailLayer();
-      openMainModal();
-    }
-    try {
-      const res = await fetch(`https://api.themoviedb.org/3/person/${personId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
-      const person = await res.json();
-      const img = person.profile_path ? IMG_URL + person.profile_path : 'https://via.placeholder.com/100x140?text=No+Image';
-      let html = `
-        <div class="actor-detail-header">
-          <img src="${img}" alt="${person.name}" />
-          <div class="bio">
-            <h2>${person.name}</h2>
-            <p>${person.biography || 'Biyografi yok.'}</p>
-          </div>
-        </div>
-        <div class="modal-section-title">Filmleri</div>
-      `;
-      const movies = person.credits?.cast || [];
-      movies.sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
-      movies.slice(0, 20).forEach(m => {
-        const poster = m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No+Image';
-        html += `
-          <div class="list-card" onclick="closeMainModal(); setTimeout(() => showDetail(${m.id}), 100);">
-            <img src="${poster}" alt="${m.title}" />
-            <div class="info">
-              <div class="title" style="color:#222;">${m.title}</div>
-              <div class="meta">${m.release_date ? m.release_date.slice(0,4) : ''} · ⭐ ${m.vote_average ? m.vote_average.toFixed(1) : '-'}</div>
-            </div>
-          </div>
-        `;
-      });
-      layerDetail.innerHTML = html;
     } catch {
       layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Hata oluştu.</div>';
     }
@@ -781,12 +744,54 @@
     card.addEventListener('click', () => {
       savedScrollY = window.scrollY;
       if (item.title) showDetail(item.id);
-      else if (item.name) showActorDetail(item.id);
+      else if (item.name) showActorDetailFromMain(item.id);
       else showDetail(item.id);
     });
     return card;
   }
 
+  // --- ANA SAYFADAN OYUNCU DETAYI ---
+  async function showActorDetailFromMain(personId) {
+    savedScrollY = window.scrollY;
+    layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Yükleniyor...</div>';
+    layerSearch.style.display = 'none';
+    showDetailLayer();
+    openModal();
+    try {
+      const res = await fetch(`https://api.themoviedb.org/3/person/${personId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
+      const person = await res.json();
+      const img = person.profile_path ? IMG_URL + person.profile_path : 'https://via.placeholder.com/100x140?text=No+Image';
+      let html = `
+        <div class="actor-detail-header">
+          <img src="${img}" alt="${person.name}" />
+          <div class="bio">
+            <h2>${person.name}</h2>
+            <p>${person.biography || 'Biyografi yok.'}</p>
+          </div>
+        </div>
+        <div class="modal-section-title">Filmleri</div>
+      `;
+      const movies = person.credits?.cast || [];
+      movies.sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
+      movies.slice(0, 20).forEach(m => {
+        const poster = m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No+Image';
+        html += `
+          <div class="list-card" onclick="closeModal(); setTimeout(() => showDetail(${m.id}), 100);">
+            <img src="${poster}" alt="${m.title}" />
+            <div class="info">
+              <div class="title" style="color:#222;">${m.title}</div>
+              <div class="meta">${m.release_date ? m.release_date.slice(0,4) : ''} · ⭐ ${m.vote_average ? m.vote_average.toFixed(1) : '-'}</div>
+            </div>
+          </div>
+        `;
+      });
+      layerDetail.innerHTML = html;
+    } catch {
+      layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Hata oluştu.</div>';
+    }
+  }
+
+  // --- LİSTE RENDER ---
   function renderList(items, fromSearch) {
     pageList.innerHTML = '';
     if (!items || items.length === 0) {
@@ -802,17 +807,32 @@
   }
 
   // --- OLAY DİNLEYİCİLERİ ---
+  modalClose.addEventListener('click', () => {
+    if (layerDetail.style.display === 'block') {
+      // Detay katmanı açıksa, kapatınca arama katmanına dön
+      showSearchLayer();
+      // Arama katmanı boşsa veya gizliyse (ana sayfadan gelmişse) modalı tamamen kapat
+      if (layerSearch.style.display === 'none' || layerSearch.innerHTML.trim() === '') {
+        closeModal();
+      }
+    } else {
+      // Arama katmanı açıksa, modalı tamamen kapat
+      closeModal();
+    }
+  });
+
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       if (isSearchMode) { 
         isSearchMode = false; 
         tabsContainer.style.display = 'flex'; 
-        closeMainModal();
+        if (mainModal.classList.contains('active')) closeModal();
       }
       savedScrollY = 0;
       loadTab(tab.dataset.tab);
     });
   });
+
   searchBtn.addEventListener('click', () => { doSearch(searchInput.value.trim()); });
   searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') doSearch(searchInput.value.trim()); });
 
