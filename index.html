@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
   <title>Film Bilgisi</title>
   <style>
     * { box-sizing: border-box; }
@@ -13,6 +13,7 @@
       color: #222;
       padding-bottom: 80px;
     }
+
     /* --- Üst Sekmeler --- */
     #tabs-container {
       background: #fff;
@@ -20,7 +21,7 @@
       border-bottom: 1px solid #e0e0e0;
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: 10;
       padding: 0 4px;
     }
     .tab {
@@ -47,7 +48,6 @@
       height: 3px;
       background: #4285F4;
       border-radius: 3px 3px 0 0;
-      transition: 0.2s;
     }
     .tab:active { opacity: 0.6; }
 
@@ -103,14 +103,11 @@
       margin-left: 4px;
     }
     .search-wrapper .search-btn:active { transform: scale(0.95); }
-    .search-wrapper .search-btn:hover { background: #3367D6; }
 
     /* --- Sayfa Konteyner --- */
-    .page {
-      display: none;
+    #page-list {
       padding: 12px;
     }
-    .page.active { display: block; }
 
     /* --- Liste Kartı --- */
     .list-card {
@@ -180,27 +177,63 @@
     }
     .load-more-btn:active { transform: scale(0.97); }
 
-    /* --- Detay Sayfası --- */
-    .detail-poster-wrap {
+    /* --- ORTAK MODAL (Film & Oyuncu Detayı) --- */
+    #main-modal {
+      position: fixed;
+      inset: 0;
+      background: #1a1a1a;
+      z-index: 4000;
+      display: none;
+      flex-direction: column;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    #main-modal.active { display: flex; }
+    
+    #modal-header {
+      position: sticky;
+      top: 0;
+      background: #1a1a1a;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: flex-end;
+      z-index: 10;
+    }
+    #modal-close {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 28px;
+      cursor: pointer;
+      padding: 4px 8px;
+      line-height: 1;
+    }
+    #modal-body {
+      padding: 0 16px 40px 16px;
+      color: #eee;
+    }
+    
+    /* Modal içi stiller */
+    .modal-poster-wrap {
       position: relative;
       width: 100%;
-      border-radius: 16px;
+      border-radius: 12px;
       overflow: hidden;
       margin-bottom: 16px;
     }
-    .detail-poster-wrap img {
+    .modal-poster-wrap img {
       width: 100%;
       display: block;
-      border-radius: 16px;
+      border-radius: 12px;
       cursor: pointer;
     }
-    .detail-actions {
+    .modal-actions {
       display: flex;
       gap: 10px;
       margin-top: 10px;
       flex-wrap: wrap;
     }
-    .detail-actions button {
+    .modal-actions button {
       flex: 1;
       min-width: 100px;
       padding: 10px 0;
@@ -210,28 +243,25 @@
       font-size: 14px;
       cursor: pointer;
       transition: 0.2s;
-      background: rgba(255,255,255,0.9);
-      color: #333;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .detail-actions button:active { transform: scale(0.95); }
-    .detail-actions .google-btn { background: #4285F4; color: #fff; }
-    .detail-actions .trailer-btn { background: #e50914; color: #fff; }
+    .modal-actions button:active { transform: scale(0.95); }
+    .modal-actions .google-btn { background: #4285F4; color: #fff; }
+    .modal-actions .trailer-btn { background: #e50914; color: #fff; }
 
-    .detail-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
-    .detail-original { font-size: 16px; color: #888; margin-bottom: 8px; }
-    .detail-meta { font-size: 14px; color: #666; margin-bottom: 12px; }
-    .detail-overview {
+    .modal-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .modal-original { font-size: 16px; color: #999; margin-bottom: 8px; }
+    .modal-meta { font-size: 14px; color: #aaa; margin-bottom: 12px; }
+    .modal-overview {
       font-size: 16px;
       line-height: 1.5;
-      color: #333;
+      color: #ccc;
       margin-bottom: 20px;
-      background: #fff;
+      background: #2a2a2a;
       padding: 14px;
       border-radius: 12px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
-    .detail-section-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+    .modal-section-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; margin-top: 10px; }
+    
     .actor-scroll {
       display: flex;
       gap: 12px;
@@ -242,28 +272,30 @@
     .actor-scroll::-webkit-scrollbar { display: none; }
     .actor-card {
       flex: 0 0 100px;
-      background: #fff;
+      background: #2a2a2a;
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
       cursor: pointer;
       text-align: center;
       padding-bottom: 6px;
     }
     .actor-card img { width: 100%; height: 120px; object-fit: cover; }
-    .actor-card .name { font-size: 13px; font-weight: 600; margin: 4px 0 0; }
-    .actor-card .char { font-size: 11px; color: #777; }
+    .actor-card .name { font-size: 13px; font-weight: 600; margin: 4px 0 0; color: #fff; }
+    .actor-card .char { font-size: 11px; color: #aaa; }
+
     .actor-detail-header {
       display: flex;
       gap: 16px;
       margin-bottom: 16px;
     }
     .actor-detail-header img { width: 100px; height: 140px; object-fit: cover; border-radius: 12px; }
-    .actor-detail-header .bio { flex: 1; font-size: 14px; line-height: 1.4; color: #444; }
-    .msg { text-align: center; padding: 30px 10px; color: #888; font-size: 16px; }
-    .back-btn { background: none; border: none; font-size: 28px; cursor: pointer; padding: 4px 0 12px 0; display: block; color: #333; }
+    .actor-detail-header .bio { flex: 1; font-size: 14px; line-height: 1.4; color: #ccc; }
+    .actor-detail-header h2 { margin: 0 0 8px 0; color: #fff; }
 
-    /* --- Galeri Modal --- */
+    .msg { text-align: center; padding: 30px 10px; color: #888; font-size: 16px; }
+
+    /* --- Galeri Modal (film resimleri için) --- */
     #gallery-modal {
       position: fixed;
       inset: 0;
@@ -348,10 +380,8 @@
   <div class="tab" data-tab="popular">Popüler</div>
 </div>
 
-<!-- Sayfalar -->
-<div id="page-list" class="page active"></div>
-<div id="page-detail" class="page"></div>
-<div id="page-actor" class="page"></div>
+<!-- Ana Liste -->
+<div id="page-list"></div>
 
 <!-- Alt sabit arama çubuğu -->
 <div id="search-bar">
@@ -361,34 +391,42 @@
   </div>
 </div>
 
-<!-- Galeri Modal -->
+<!-- ANA MODAL (Film & Oyuncu Detayı) -->
+<div id="main-modal">
+  <div id="modal-header">
+    <button id="modal-close">✕</button>
+  </div>
+  <div id="modal-body"></div>
+</div>
+
+<!-- Galeri Modal (Alt) -->
 <div id="gallery-modal">
-  <button class="close-gal" id="close-gal">&times;</button>
+  <button class="close-gal" id="close-gal">✕</button>
   <div id="gallery-scroll"></div>
 </div>
 
-<!-- Fragman Modal -->
+<!-- Fragman Modal (Alt) -->
 <div id="trailer-modal">
-  <button class="close-trl" id="close-trl">&times;</button>
+  <button class="close-trl" id="close-trl">✕</button>
   <iframe id="trailer-iframe" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
 </div>
 
 <script>
-  // TARAYICININ OTOMATİK SCROLL RESTORASYONUNU KAPAT
-  if (history.scrollRestoration) {
-    history.scrollRestoration = 'manual';
-  }
-
   const API_KEY = '4914230c4aaf1ff8599a892b0dfc71f4';
   const IMG_URL = 'https://image.tmdb.org/t/p/w500';
 
   const pageList = document.getElementById('page-list');
-  const pageDetail = document.getElementById('page-detail');
-  const pageActor = document.getElementById('page-actor');
   const searchInput = document.getElementById('search-input');
   const searchBtn = document.getElementById('search-btn');
   const tabs = document.querySelectorAll('.tab');
   const tabsContainer = document.getElementById('tabs-container');
+  
+  // Ana modal elemanları
+  const mainModal = document.getElementById('main-modal');
+  const modalBody = document.getElementById('modal-body');
+  const modalClose = document.getElementById('modal-close');
+  
+  // Alt modaller
   const galleryModal = document.getElementById('gallery-modal');
   const galleryScroll = document.getElementById('gallery-scroll');
   const closeGal = document.getElementById('close-gal');
@@ -401,47 +439,27 @@
   let tabPages = { now_playing: 1, top_rated: 1, popular: 1 };
   let tabTotalPages = { now_playing: 1, top_rated: 1, popular: 1 };
   let lastSearchResults = [];
-  
-  // SCROLL KONUMUNU BURADA TUTACAĞIZ
-  let savedListScroll = 0;
+  let savedScrollY = 0;
 
-  // --- GEZİNME SİSTEMİ (SAYFALAR ARASI) ---
-  function navigateTo(pageId) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById(pageId).classList.add('active');
-    // Sayfa değişimini geçmişe kaydet
-    history.pushState({ view: pageId }, '', '#' + pageId);
+  // --- TEMEL İŞLEVLER ---
+  function openModal() {
+    mainModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
   }
-
-  // --- GERİ / İLERİ TUSAŞI YÖNETİMİ ---
-  window.addEventListener('popstate', (e) => {
-    // Önce modalları kontrol et
+  function closeModal() {
+    mainModal.classList.remove('active');
+    document.body.style.overflow = '';
+    // Kapatırken alt modalleri de kapat (güvenlik)
     if (galleryModal.classList.contains('active')) {
       galleryModal.classList.remove('active');
-      document.body.style.overflow = '';
-      return;
     }
     if (trailerModal.classList.contains('active')) {
       trailerModal.classList.remove('active');
       trailerIframe.src = '';
-      document.body.style.overflow = '';
-      return;
     }
+  }
 
-    // Eğer state varsa sayfayı değiştir
-    if (e.state && e.state.view) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.getElementById(e.state.view).classList.add('active');
-
-      // Eğer ana listeye döndüysek, kaydedilen konuma git
-      if (e.state.view === 'page-list') {
-        // Scroll konumunu geri yükle (görünüm tamamen yüklendikten sonra)
-        requestAnimationFrame(() => {
-          window.scrollTo(0, savedListScroll);
-        });
-      }
-    }
-  });
+  modalClose.addEventListener('click', closeModal);
 
   // --- SEKME YÜKLEME ---
   async function loadTab(tab, page = 1, append = false) {
@@ -455,7 +473,6 @@
       pageList.innerHTML = '<div class="msg">Yükleniyor...</div>';
       tabPages[tab] = 1;
     }
-
     try {
       let endpoint = '';
       if (tab === 'now_playing') endpoint = 'now_playing';
@@ -467,10 +484,7 @@
       tabTotalPages[tab] = data.total_pages || 1;
 
       if (append) {
-        data.results.forEach(item => {
-          const card = createListCard(item);
-          pageList.appendChild(card);
-        });
+        data.results.forEach(item => { pageList.appendChild(createListCard(item)); });
         updateLoadMore(tab);
       } else {
         renderList(data.results || [], false);
@@ -502,7 +516,6 @@
     tabsContainer.style.display = 'none';
     lastSearchResults = [];
     pageList.innerHTML = '<div class="msg">Aranıyor...</div>';
-
     try {
       const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR&page=1`);
       const data = await res.json();
@@ -532,16 +545,10 @@
       </div>
     `;
     card.addEventListener('click', () => {
-      // Detay sayfasına gitmeden önce mevcut scroll konumunu KAYDET
-      savedListScroll = window.scrollY;
-      
-      if (item.media_type === 'movie' || item.title) {
-        showDetail(item.id);
-      } else if (item.media_type === 'person' || item.name) {
-        showActorDetail(item.id);
-      } else {
-        showDetail(item.id);
-      }
+      savedScrollY = window.scrollY;
+      if (item.media_type === 'movie' || item.title) showDetail(item.id);
+      else if (item.media_type === 'person' || item.name) showActorDetail(item.id);
+      else showDetail(item.id);
     });
     return card;
   }
@@ -552,48 +559,31 @@
       pageList.innerHTML = '<div class="msg">Sonuç bulunamadı.</div>';
       return;
     }
-    items.forEach(item => {
-      const card = createListCard(item);
-      pageList.appendChild(card);
-    });
-    if (!fromSearch && !isSearchMode) {
-      updateLoadMore(currentTab);
-    }
+    items.forEach(item => { pageList.appendChild(createListCard(item)); });
+    if (!fromSearch && !isSearchMode) updateLoadMore(currentTab);
     
-    // Liste render edildi, eğer burası geri dönüş ise scroll konumu zaten popstate'de restore edilecek.
-    // Ama eğer bir yeniden arama ise, en tepeye gitmek mantıklıdır.
-    if (fromSearch) {
-      savedListScroll = 0;
-      window.scrollTo(0, 0);
+    // Ana sayfaya dönüşte scroll konumunu geri yükle
+    if (savedScrollY > 0) {
+      requestAnimationFrame(() => { window.scrollTo(0, savedScrollY); });
+      savedScrollY = 0;
     }
   }
 
   // --- OLAY DİNLEYİCİLERİ ---
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
-      if (isSearchMode) {
-        isSearchMode = false;
-        lastSearchResults = [];
-        tabsContainer.style.display = 'flex';
-      }
-      // Sekme değişiminde scroll'u sıfırla
-      savedListScroll = 0;
+      if (isSearchMode) { isSearchMode = false; lastSearchResults = []; tabsContainer.style.display = 'flex'; }
+      savedScrollY = 0;
       loadTab(tab.dataset.tab);
     });
   });
+  searchBtn.addEventListener('click', () => { doSearch(searchInput.value.trim()); });
+  searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') doSearch(searchInput.value.trim()); });
 
-  searchBtn.addEventListener('click', () => {
-    doSearch(searchInput.value.trim());
-  });
-  searchInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') doSearch(searchInput.value.trim());
-  });
-
-  // --- FİLM DETAY ---
+  // --- FİLM DETAY (MODAL) ---
   async function showDetail(movieId) {
-    pageDetail.innerHTML = '<div class="msg">Yükleniyor...</div>';
-    navigateTo('page-detail'); // Geçmişe kaydet
-    
+    modalBody.innerHTML = '<div class="msg" style="color:#aaa;">Yükleniyor...</div>';
+    openModal();
     try {
       const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits,images,videos`);
       const movie = await res.json();
@@ -601,19 +591,18 @@
       const trailer = movie.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
       
       let html = `
-        <button class="back-btn" onclick="history.back()">‹</button>
-        <div class="detail-poster-wrap">
-          <img src="${poster}" alt="${movie.title}" id="main-poster" />
+        <div class="modal-poster-wrap">
+          <img src="${poster}" alt="${movie.title}" id="m-poster" />
         </div>
-        <div class="detail-actions">
+        <div class="modal-actions">
           <button class="google-btn" onclick="window.open('https://www.google.com/search?q=${encodeURIComponent(movie.title + ' full izle')}','_blank')">Filmi İzle</button>
           ${trailer ? `<button class="trailer-btn" onclick="openTrailer('${trailer.key}')">Fragmanı İzle</button>` : ''}
         </div>
-        <div class="detail-title">${movie.title}</div>
-        <div class="detail-original">${movie.original_title || ''}</div>
-        <div class="detail-meta">${movie.release_date ? movie.release_date.slice(0,4) : ''} · ${movie.genres ? movie.genres.map(g => g.name).join(', ') : ''}</div>
-        <div class="detail-overview">${movie.overview || 'Konu yok.'}</div>
-        <div class="detail-section-title">Oyuncular</div>
+        <div class="modal-title">${movie.title}</div>
+        <div class="modal-original">${movie.original_title || ''}</div>
+        <div class="modal-meta">${movie.release_date ? movie.release_date.slice(0,4) : ''} · ${movie.genres ? movie.genres.map(g => g.name).join(', ') : ''}</div>
+        <div class="modal-overview">${movie.overview || 'Konu yok.'}</div>
+        <div class="modal-section-title">Oyuncular</div>
         <div class="actor-scroll">
       `;
       const cast = movie.credits?.cast || [];
@@ -628,18 +617,49 @@
         `;
       });
       html += `</div>`;
-      pageDetail.innerHTML = html;
+      modalBody.innerHTML = html;
 
-      document.getElementById('main-poster').addEventListener('click', () => {
-        openGallery(movie.images);
-      });
-
-    } catch (e) {
-      pageDetail.innerHTML = '<div class="msg">Hata oluştu.</div>';
-    }
+      document.getElementById('m-poster').addEventListener('click', () => { openGallery(movie.images); });
+    } catch { modalBody.innerHTML = '<div class="msg" style="color:#aaa;">Hata oluştu.</div>'; }
   }
 
-  // --- GALERİ ---
+  // --- OYUNCU DETAY (MODAL) ---
+  async function showActorDetail(personId) {
+    modalBody.innerHTML = '<div class="msg" style="color:#aaa;">Yükleniyor...</div>';
+    openModal();
+    try {
+      const res = await fetch(`https://api.themoviedb.org/3/person/${personId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
+      const person = await res.json();
+      const img = person.profile_path ? IMG_URL + person.profile_path : 'https://via.placeholder.com/100x140?text=No+Image';
+      let html = `
+        <div class="actor-detail-header">
+          <img src="${img}" alt="${person.name}" />
+          <div class="bio">
+            <h2>${person.name}</h2>
+            <p>${person.biography || 'Biyografi yok.'}</p>
+          </div>
+        </div>
+        <div class="modal-section-title">Filmleri</div>
+      `;
+      const movies = person.credits?.cast || [];
+      movies.sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
+      movies.slice(0, 20).forEach(m => {
+        const poster = m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No+Image';
+        html += `
+          <div class="list-card" onclick="closeModal(); setTimeout(() => showDetail(${m.id}), 100);">
+            <img src="${poster}" alt="${m.title}" />
+            <div class="info">
+              <div class="title" style="color:#222;">${m.title}</div>
+              <div class="meta">${m.release_date ? m.release_date.slice(0,4) : ''} · ⭐ ${m.vote_average ? m.vote_average.toFixed(1) : '-'}</div>
+            </div>
+          </div>
+        `;
+      });
+      modalBody.innerHTML = html;
+    } catch { modalBody.innerHTML = '<div class="msg" style="color:#aaa;">Hata oluştu.</div>'; }
+  }
+
+  // --- GALERİ (Alt Modal) ---
   function openGallery(images) {
     galleryScroll.innerHTML = '';
     const all = [...(images.posters || []), ...(images.backdrops || []), ...(images.stills || [])];
@@ -655,78 +675,19 @@
       });
     }
     galleryModal.classList.add('active');
-    document.body.style.overflow = 'hidden';
   }
 
-  closeGal.addEventListener('click', () => {
-    galleryModal.classList.remove('active');
-    document.body.style.overflow = '';
-  });
-  galleryModal.addEventListener('click', (e) => {
-    if (e.target === galleryModal) {
-      galleryModal.classList.remove('active');
-      document.body.style.overflow = '';
-    }
-  });
+  closeGal.addEventListener('click', () => { galleryModal.classList.remove('active'); });
+  galleryModal.addEventListener('click', (e) => { if (e.target === galleryModal) galleryModal.classList.remove('active'); });
 
-  // --- FRAGMAN ---
+  // --- FRAGMAN (Alt Modal) ---
   function openTrailer(key) {
     trailerIframe.src = `https://www.youtube.com/embed/${key}?autoplay=1&enablejsapi=1&origin=${window.location.origin}`;
     trailerModal.classList.add('active');
-    document.body.style.overflow = 'hidden';
   }
 
-  closeTrl.addEventListener('click', () => {
-    trailerModal.classList.remove('active');
-    trailerIframe.src = '';
-    document.body.style.overflow = '';
-  });
-  trailerModal.addEventListener('click', (e) => {
-    if (e.target === trailerModal) {
-      trailerModal.classList.remove('active');
-      trailerIframe.src = '';
-      document.body.style.overflow = '';
-    }
-  });
-
-  // --- OYUNCU DETAY ---
-  async function showActorDetail(personId) {
-    pageActor.innerHTML = '<div class="msg">Yükleniyor...</div>';
-    navigateTo('page-actor');
-    try {
-      const res = await fetch(`https://api.themoviedb.org/3/person/${personId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
-      const person = await res.json();
-      const img = person.profile_path ? IMG_URL + person.profile_path : 'https://via.placeholder.com/100x140?text=No+Image';
-      let html = `
-        <button class="back-btn" onclick="history.back()">‹</button>
-        <div class="actor-detail-header">
-          <img src="${img}" alt="${person.name}" />
-          <div class="bio">
-            <h2>${person.name}</h2>
-            <p>${person.biography || 'Biyografi yok.'}</p>
-          </div>
-        </div>
-        <div class="detail-section-title">Filmleri</div>
-      `;
-      const movies = person.credits?.cast || [];
-      movies.sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
-      movies.slice(0, 20).forEach(m => {
-        const poster = m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No+Image';
-        html += `
-          <div class="list-card" onclick="showDetail(${m.id})">
-            <img src="${poster}" alt="${m.title}" />
-            <div class="info">
-              <div class="title">${m.title}</div>
-              <div class="meta">${m.release_date ? m.release_date.slice(0,4) : ''} · ⭐ ${m.vote_average ? m.vote_average.toFixed(1) : '-'}</div>
-            </div>
-          </div>
-        `;
-      });
-      pageActor.innerHTML = html;
-    } catch (e) {
-      pageActor.innerHTML = '<div class="msg">Hata oluştu.</div>';
-    }
-  }
+  closeTrl.addEventListener('click', () => { trailerModal.classList.remove('active'); trailerIframe.src = ''; });
+  trailerModal.addEventListener('click', (e) => { if (e.target === trailerModal) { trailerModal.classList.remove('active'); trailerIframe.src = ''; } });
 
   // --- BAŞLANGIÇ ---
   loadTab('now_playing');
