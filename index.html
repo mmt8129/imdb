@@ -100,7 +100,6 @@
     }
     .search-wrapper .search-btn:active { transform: scale(0.95); }
     
-    /* YENİ: Film / Oyuncu seçimi */
     .search-type-select {
       height: 34px;
       border: 1px solid #ddd;
@@ -182,11 +181,11 @@
     }
     .load-more-btn:active { transform: scale(0.97); }
 
-    /* --- MODAL --- */
+    /* --- MODAL (BEYAZ ZEMİN) --- */
     #main-modal {
       position: fixed;
       inset: 0;
-      background: #1a1a1a;
+      background: #ffffff; /* Beyaz arka plan */
       z-index: 4000;
       display: none;
       flex-direction: column;
@@ -197,7 +196,7 @@
     #modal-header {
       position: sticky;
       top: 0;
-      background: #1a1a1a;
+      background: #ffffff;
       padding: 12px 16px;
       display: flex;
       justify-content: flex-end;
@@ -206,7 +205,16 @@
     #modal-close {
       background: transparent;
       border: none;
-      color: #fff;
+      color: #333;
+      font-size: 28px;
+      cursor: pointer;
+      padding: 4px 8px;
+      line-height: 1;
+    }
+    #modal-close-detail {
+      background: transparent;
+      border: none;
+      color: #333;
       font-size: 28px;
       cursor: pointer;
       padding: 4px 8px;
@@ -215,23 +223,37 @@
     
     #modal-body {
       padding: 0 16px 40px 16px;
-      color: #eee;
+      color: #333;
       position: relative;
     }
     
-    #layer-search { 
-      display: block; 
-    }
-    #layer-detail { 
-      display: none; 
-      position: absolute; 
-      top: 0; left: 0; right: 0; bottom: 0; 
-      background: #1a1a1a; 
-      padding: 0 16px 40px 16px; 
-      z-index: 5; 
-    }
+    #layer-search { display: block; }
+    #layer-detail { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #ffffff; padding: 0 16px 40px 16px; z-index: 5; }
 
-    /* --- Detay içi --- */
+    /* --- ARAMA SONUÇ BAŞLIK VE BUTON --- */
+    .search-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .search-header span { font-size: 20px; font-weight: 700; color: #333; }
+    .btn-home {
+      background: #4285F4;
+      color: #fff;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn-home:active { transform: scale(0.95); }
+
+    /* --- DETAY İÇİ (BEYAZ) --- */
     .modal-poster-wrap {
       position: relative;
       width: 100%;
@@ -267,14 +289,14 @@
     .modal-actions .trailer-btn { background: #e50914; color: #fff; }
 
     .modal-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
-    .modal-original { font-size: 16px; color: #999; margin-bottom: 8px; }
-    .modal-meta { font-size: 14px; color: #aaa; margin-bottom: 12px; }
+    .modal-original { font-size: 16px; color: #777; margin-bottom: 8px; }
+    .modal-meta { font-size: 14px; color: #666; margin-bottom: 12px; }
     .modal-overview {
       font-size: 16px;
       line-height: 1.5;
-      color: #ccc;
+      color: #444;
       margin-bottom: 20px;
-      background: #2a2a2a;
+      background: #f5f5f5;
       padding: 14px;
       border-radius: 12px;
     }
@@ -290,17 +312,17 @@
     .actor-scroll::-webkit-scrollbar { display: none; }
     .actor-card {
       flex: 0 0 100px;
-      background: #2a2a2a;
+      background: #f5f5f5;
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
       cursor: pointer;
       text-align: center;
       padding-bottom: 6px;
     }
     .actor-card img { width: 100%; height: 120px; object-fit: cover; }
-    .actor-card .name { font-size: 13px; font-weight: 600; margin: 4px 0 0; color: #fff; }
-    .actor-card .char { font-size: 11px; color: #aaa; }
+    .actor-card .name { font-size: 13px; font-weight: 600; margin: 4px 0 0; color: #333; }
+    .actor-card .char { font-size: 11px; color: #777; }
 
     .actor-detail-header {
       display: flex;
@@ -308,16 +330,16 @@
       margin-bottom: 16px;
     }
     .actor-detail-header img { width: 100px; height: 140px; object-fit: cover; border-radius: 12px; }
-    .actor-detail-header .bio { flex: 1; font-size: 14px; line-height: 1.4; color: #ccc; }
-    .actor-detail-header h2 { margin: 0 0 8px 0; color: #fff; }
+    .actor-detail-header .bio { flex: 1; font-size: 14px; line-height: 1.4; color: #444; }
+    .actor-detail-header h2 { margin: 0 0 8px 0; color: #333; }
 
     .msg { text-align: center; padding: 30px 10px; color: #888; font-size: 16px; }
 
-    /* --- Resim Görüntüleyici --- */
+    /* --- RESİM GÖRÜNTÜLEYİCİ (BEYAZ) --- */
     #image-viewer {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.95);
+      background: #ffffff;
       z-index: 5000;
       display: none;
       align-items: center;
@@ -329,7 +351,7 @@
       position: absolute;
       top: 20px;
       right: 20px;
-      color: #fff;
+      color: #333;
       font-size: 32px;
       cursor: pointer;
       background: none;
@@ -343,13 +365,14 @@
       touch-action: pan-y pinch-zoom;
       user-select: none;
       border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     }
 
-    /* --- Fragman --- */
+    /* --- FRAGMAN (BEYAZ) --- */
     #trailer-modal {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.95);
+      background: #ffffff;
       z-index: 6000;
       display: none;
       align-items: center;
@@ -360,7 +383,7 @@
       position: absolute;
       top: 20px;
       right: 20px;
-      color: #fff;
+      color: #333;
       font-size: 32px;
       cursor: pointer;
       background: none;
@@ -373,6 +396,7 @@
       max-height: 450px;
       border-radius: 12px;
       border: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     }
   </style>
 </head>
@@ -399,7 +423,7 @@
 
 <div id="main-modal">
   <div id="modal-header">
-    <button id="modal-close">✕</button>
+    <button id="modal-close-detail">✕</button>
   </div>
   <div id="modal-body">
     <div id="layer-search"></div>
@@ -429,7 +453,7 @@
   const tabsContainer = document.getElementById('tabs-container');
   
   const mainModal = document.getElementById('main-modal');
-  const modalClose = document.getElementById('modal-close');
+  const modalCloseDetail = document.getElementById('modal-close-detail');
   const layerSearch = document.getElementById('layer-search');
   const layerDetail = document.getElementById('layer-detail');
   
@@ -458,7 +482,6 @@
     document.body.style.overflow = '';
     if (imageViewer.classList.contains('active')) closeImageViewer();
     if (trailerModal.classList.contains('active')) closeTrailer();
-    
     // Ana sayfaya dönünce scroll'u geri yükle
     if (savedScrollY > 0) {
       requestAnimationFrame(() => { window.scrollTo(0, savedScrollY); });
@@ -470,7 +493,6 @@
   function showSearchLayer() {
     layerSearch.style.display = 'block';
     layerDetail.style.display = 'none';
-    // Arama listesinin scroll konumunu geri yükle
     const searchContainer = layerSearch.querySelector('.search-container');
     if (searchContainer) {
       requestAnimationFrame(() => {
@@ -560,7 +582,7 @@
     }
   }
 
-  // --- ARAMA (Film veya Oyuncu seçimine göre) ---
+  // --- ARAMA ---
   async function doSearch(query) {
     if (!query.trim()) return;
     isSearchMode = true;
@@ -590,22 +612,22 @@
     }
   }
 
-  // --- ARAMA SONUÇLARI (Kaydırma korumalı) ---
+  // --- ARAMA SONUÇLARI (Kapat butonu yok, Ana Sayfaya Dön var) ---
   function showSearchResults(items, query) {
-    // Scroll konumunu kaydet (önceki arama sonucu varsa)
     savedSearchScrollTop = layerSearch.scrollTop;
     
     layerSearch.innerHTML = `
       <div class="search-container">
-        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 20px; font-weight: 700; color: #fff;">"${query}" için sonuçlar</span>
+        <div class="search-header">
+          <span>"${query}" için sonuçlar</span>
+          <button class="btn-home" onclick="closeModal()">Ana Sayfaya Dön</button>
         </div>
       </div>
     `;
     const container = layerSearch.querySelector('.search-container');
     
     if (!items || items.length === 0) {
-      container.innerHTML += '<div class="msg" style="color:#aaa;">Sonuç bulunamadı.</div>';
+      container.innerHTML += '<div class="msg" style="color:#888;">Sonuç bulunamadı.</div>';
     } else {
       items.forEach(item => {
         const card = document.createElement('div');
@@ -638,7 +660,7 @@
 
   // --- ARAMA'DAN DETAY AÇ ---
   async function openDetailFromSearch(movieId) {
-    layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Yükleniyor...</div>';
+    layerDetail.innerHTML = '<div class="msg" style="color:#888;">Yükleniyor...</div>';
     showDetailLayer();
     try {
       const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits,videos`);
@@ -679,13 +701,13 @@
         openImageViewer(poster);
       });
     } catch {
-      layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Hata oluştu.</div>';
+      layerDetail.innerHTML = '<div class="msg" style="color:#888;">Hata oluştu.</div>';
     }
   }
 
   // --- ARAMA'DAN OYUNCU DETAYI AÇ ---
   async function openActorDetailFromSearch(personId) {
-    layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Yükleniyor...</div>';
+    layerDetail.innerHTML = '<div class="msg" style="color:#888;">Yükleniyor...</div>';
     showDetailLayer();
     try {
       const res = await fetch(`https://api.themoviedb.org/3/person/${personId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
@@ -709,7 +731,7 @@
           <div class="list-card" onclick="closeModal(); setTimeout(() => openDetailFromSearch(${m.id}), 100);">
             <img src="${poster}" alt="${m.title}" />
             <div class="info">
-              <div class="title" style="color:#222;">${m.title}</div>
+              <div class="title" style="color:#333;">${m.title}</div>
               <div class="meta">${m.release_date ? m.release_date.slice(0,4) : ''} · ⭐ ${m.vote_average ? m.vote_average.toFixed(1) : '-'}</div>
             </div>
           </div>
@@ -717,14 +739,14 @@
       });
       layerDetail.innerHTML = html;
     } catch {
-      layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Hata oluştu.</div>';
+      layerDetail.innerHTML = '<div class="msg" style="color:#888;">Hata oluştu.</div>';
     }
   }
 
   // --- ANA SAYFADAN DETAY AÇ ---
   async function showDetail(movieId) {
     savedScrollY = window.scrollY;
-    layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Yükleniyor...</div>';
+    layerDetail.innerHTML = '<div class="msg" style="color:#888;">Yükleniyor...</div>';
     layerSearch.style.display = 'none';
     showDetailLayer();
     openModal();
@@ -767,7 +789,63 @@
         openImageViewer(poster);
       });
     } catch {
-      layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Hata oluştu.</div>';
+      layerDetail.innerHTML = '<div class="msg" style="color:#888;">Hata oluştu.</div>';
+    }
+  }
+
+  // --- ANA SAYFADAN OYUNCU DETAYI ---
+  async function showActorDetailFromMain(personId) {
+    savedScrollY = window.scrollY;
+    layerDetail.innerHTML = '<div class="msg" style="color:#888;">Yükleniyor...</div>';
+    layerSearch.style.display = 'none';
+    showDetailLayer();
+    openModal();
+    try {
+      const res = await fetch(`https://api.themoviedb.org/3/person/${personId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
+      const person = await res.json();
+      const img = person.profile_path ? IMG_URL + person.profile_path : 'https://via.placeholder.com/100x140?text=No+Image';
+      let html = `
+        <div class="actor-detail-header">
+          <img src="${img}" alt="${person.name}" />
+          <div class="bio">
+            <h2>${person.name}</h2>
+            <p>${person.biography || 'Biyografi yok.'}</p>
+          </div>
+        </div>
+        <div class="modal-section-title">Filmleri</div>
+      `;
+      const movies = person.credits?.cast || [];
+      movies.sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
+      movies.slice(0, 20).forEach(m => {
+        const poster = m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No+Image';
+        html += `
+          <div class="list-card" onclick="closeModal(); setTimeout(() => showDetail(${m.id}), 100);">
+            <img src="${poster}" alt="${m.title}" />
+            <div class="info">
+              <div class="title" style="color:#333;">${m.title}</div>
+              <div class="meta">${m.release_date ? m.release_date.slice(0,4) : ''} · ⭐ ${m.vote_average ? m.vote_average.toFixed(1) : '-'}</div>
+            </div>
+          </div>
+        `;
+      });
+      layerDetail.innerHTML = html;
+    } catch {
+      layerDetail.innerHTML = '<div class="msg" style="color:#888;">Hata oluştu.</div>';
+    }
+  }
+
+  // --- LİSTE RENDER ---
+  function renderList(items, fromSearch) {
+    pageList.innerHTML = '';
+    if (!items || items.length === 0) {
+      pageList.innerHTML = '<div class="msg">Sonuç bulunamadı.</div>';
+      return;
+    }
+    items.forEach(item => { pageList.appendChild(createListCard(item)); });
+    if (!fromSearch && !isSearchMode) updateLoadMore(currentTab);
+    if (savedScrollY > 0) {
+      requestAnimationFrame(() => { window.scrollTo(0, savedScrollY); });
+      savedScrollY = 0;
     }
   }
 
@@ -797,70 +875,11 @@
     return card;
   }
 
-  // --- ANA SAYFADAN OYUNCU DETAYI ---
-  async function showActorDetailFromMain(personId) {
-    savedScrollY = window.scrollY;
-    layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Yükleniyor...</div>';
-    layerSearch.style.display = 'none';
-    showDetailLayer();
-    openModal();
-    try {
-      const res = await fetch(`https://api.themoviedb.org/3/person/${personId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
-      const person = await res.json();
-      const img = person.profile_path ? IMG_URL + person.profile_path : 'https://via.placeholder.com/100x140?text=No+Image';
-      let html = `
-        <div class="actor-detail-header">
-          <img src="${img}" alt="${person.name}" />
-          <div class="bio">
-            <h2>${person.name}</h2>
-            <p>${person.biography || 'Biyografi yok.'}</p>
-          </div>
-        </div>
-        <div class="modal-section-title">Filmleri</div>
-      `;
-      const movies = person.credits?.cast || [];
-      movies.sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
-      movies.slice(0, 20).forEach(m => {
-        const poster = m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No+Image';
-        html += `
-          <div class="list-card" onclick="closeModal(); setTimeout(() => showDetail(${m.id}), 100);">
-            <img src="${poster}" alt="${m.title}" />
-            <div class="info">
-              <div class="title" style="color:#222;">${m.title}</div>
-              <div class="meta">${m.release_date ? m.release_date.slice(0,4) : ''} · ⭐ ${m.vote_average ? m.vote_average.toFixed(1) : '-'}</div>
-            </div>
-          </div>
-        `;
-      });
-      layerDetail.innerHTML = html;
-    } catch {
-      layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Hata oluştu.</div>';
-    }
-  }
-
-  // --- LİSTE RENDER ---
-  function renderList(items, fromSearch) {
-    pageList.innerHTML = '';
-    if (!items || items.length === 0) {
-      pageList.innerHTML = '<div class="msg">Sonuç bulunamadı.</div>';
-      return;
-    }
-    items.forEach(item => { pageList.appendChild(createListCard(item)); });
-    if (!fromSearch && !isSearchMode) updateLoadMore(currentTab);
-    if (savedScrollY > 0) {
-      requestAnimationFrame(() => { window.scrollTo(0, savedScrollY); });
-      savedScrollY = 0;
-    }
-  }
-
   // --- OLAY DİNLEYİCİLERİ ---
-  modalClose.addEventListener('click', () => {
-    if (layerDetail.style.display === 'block') {
-      // Detay katmanı açıksa, arama katmanına geri dön
-      showSearchLayer();
-    } else {
-      // Arama katmanı açıksa, modalı tamamen kapat
-      closeModal();
+  modalCloseDetail.addEventListener('click', () => {
+    // Detay katmanı açıksa veya herhangi bir durumda, ana sayfaya dön (tek tık)
+    if (mainModal.classList.contains('active')) {
+      closeModal(); // Detay katmanından direkt ana sayfaya dön
     }
   });
 
