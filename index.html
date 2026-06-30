@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes" />
   <title>Film Bilgisi</title>
   <style>
     * { box-sizing: border-box; }
@@ -263,7 +263,7 @@
     .msg { text-align: center; padding: 30px 10px; color: #888; font-size: 16px; }
     .back-btn { background: none; border: none; font-size: 28px; cursor: pointer; padding: 4px 0 12px 0; display: block; color: #333; }
 
-    /* --- Galeri Modal (Düzeltildi) --- */
+    /* --- Galeri Modal (Google Fotoğraflar Tarzı) --- */
     #gallery-modal {
       position: fixed;
       inset: 0;
@@ -273,6 +273,7 @@
       align-items: center;
       justify-content: center;
       flex-direction: column;
+      touch-action: none;
     }
     #gallery-modal.active { display: flex; }
     #gallery-modal .close-gal {
@@ -284,26 +285,27 @@
       cursor: pointer;
       background: none;
       border: none;
+      z-index: 5001;
     }
     #gallery-scroll {
       display: flex;
       overflow-x: auto;
-      gap: 10px;
-      padding: 20px;
-      width: 100%;
-      height: 85vh;
+      scroll-snap-type: x mandatory;
+      width: 100vw;
+      height: 100vh;
       scrollbar-width: none;
+      touch-action: pan-y pinch-zoom;
     }
     #gallery-scroll::-webkit-scrollbar { display: none; }
     #gallery-scroll img {
-      height: 100%;
-      width: auto;
-      max-width: 95%;
+      width: 100vw;
+      height: 100vh;
       object-fit: contain;
-      border-radius: 8px;
+      flex-shrink: 0;
+      scroll-snap-align: center;
+      touch-action: pan-y pinch-zoom;
       user-select: none;
       -webkit-user-drag: none;
-      flex-shrink: 0;
     }
 
     /* --- Fragman Modal --- */
@@ -395,7 +397,7 @@
   let tabPages = { now_playing: 1, top_rated: 1, popular: 1 };
   let tabTotalPages = { now_playing: 1, top_rated: 1, popular: 1 };
   let lastSearchResults = [];
-  let lastSearchQuery = '';
+  let lastScrollPosition = 0;
 
   function showPage(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -412,15 +414,19 @@
         if (isSearchMode) {
           tabsContainer.style.display = 'none';
           if (lastSearchResults.length > 0) {
-            // Listeyi yeniden oluşturma, sadece gizliyse göster
-            pageList.style.display = 'block';
+            renderList(lastSearchResults, true);
           } else {
             pageList.innerHTML = '<div class="msg">Arama sonucu yok.</div>';
           }
         } else {
           tabsContainer.style.display = 'flex';
-          // Sekme listesini güncellemeden sadece göster
-          pageList.style.display = 'block';
+          loadTab(currentTab, tabPages[currentTab], false);
+        }
+        // Geri dönüşte kaydırma konumunu geri yükle
+        if (lastScrollPosition > 0) {
+          requestAnimationFrame(() => {
+            window.scrollTo(0, lastScrollPosition);
+          });
         }
       }
     }
@@ -491,7 +497,6 @@
     if (!query.trim()) return;
     isSearchMode = true;
     tabsContainer.style.display = 'none';
-    lastSearchQuery = query;
     lastSearchResults = [];
     pageList.innerHTML = '<div class="msg">Aranıyor...</div>';
 
@@ -536,7 +541,9 @@
   }
 
   function renderList(items, fromSearch) {
-    // Temizleme yapma, sadece içeriği değiştir
+    // Mevcut kaydırma pozisyonunu hafızaya al
+    lastScrollPosition = window.scrollY;
+
     pageList.innerHTML = '';
     if (!items || items.length === 0) {
       pageList.innerHTML = '<div class="msg">Sonuç bulunamadı.</div>';
@@ -550,6 +557,11 @@
       updateLoadMore(currentTab);
     }
     navigateTo('page-list');
+
+    // Listeyi yeniledikten sonra eski kaydırma konumuna geri dön
+    requestAnimationFrame(() => {
+      window.scrollTo(0, lastScrollPosition);
+    });
   }
 
   // --- OLAY DİNLEYİCİLERİ ---
@@ -625,12 +637,13 @@
     galleryScroll.innerHTML = '';
     const all = [...(images.posters || []), ...(images.backdrops || []), ...(images.stills || [])];
     if (all.length === 0) {
-      galleryScroll.innerHTML = '<div style="color:#fff;text-align:center;padding:40px;">Bu film için ek resim yok.</div>';
+      galleryScroll.innerHTML = '<div style="color:#fff;text-align:center;padding:40px;font-size:18px;width:100vw;">Bu film için ek resim yok.</div>';
     } else {
       all.forEach(img => {
         const el = document.createElement('img');
         el.src = IMG_URL + img.file_path;
         el.alt = 'Film resmi';
+        el.draggable = false;
         galleryScroll.appendChild(el);
       });
     }
