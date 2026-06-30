@@ -8,7 +8,7 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background: #f5f5f5;
       color: #222;
       padding-bottom: 80px;
@@ -99,6 +99,27 @@
       margin-left: 4px;
     }
     .search-wrapper .search-btn:active { transform: scale(0.95); }
+    
+    /* YENİ: Film / Oyuncu seçimi */
+    .search-type-select {
+      height: 34px;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      padding: 0 12px;
+      font-size: 14px;
+      background: #fff;
+      color: #333;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23555" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>');
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      padding-right: 28px;
+      flex-shrink: 0;
+      margin-right: 8px;
+    }
 
     #page-list { padding: 12px; }
 
@@ -190,9 +211,7 @@
       cursor: pointer;
       padding: 4px 8px;
       line-height: 1;
-      display: none; /* default gizli */
     }
-    #modal-close.visible { display: block; }
     
     #modal-body {
       padding: 0 16px 40px 16px;
@@ -200,8 +219,17 @@
       position: relative;
     }
     
-    #layer-search { display: block; }
-    #layer-detail { display: none; }
+    #layer-search { 
+      display: block; 
+    }
+    #layer-detail { 
+      display: none; 
+      position: absolute; 
+      top: 0; left: 0; right: 0; bottom: 0; 
+      background: #1a1a1a; 
+      padding: 0 16px 40px 16px; 
+      z-index: 5; 
+    }
 
     /* --- Detay içi --- */
     .modal-poster-wrap {
@@ -360,6 +388,10 @@
 
 <div id="search-bar">
   <div class="search-wrapper">
+    <select class="search-type-select" id="search-type">
+      <option value="film">Film</option>
+      <option value="actor">Oyuncu</option>
+    </select>
     <input type="text" id="search-input" placeholder="Film ya da oyuncu adı giriniz..." autocomplete="off" />
     <button class="search-btn" id="search-btn">Ara</button>
   </div>
@@ -392,6 +424,7 @@
   const pageList = document.getElementById('page-list');
   const searchInput = document.getElementById('search-input');
   const searchBtn = document.getElementById('search-btn');
+  const searchType = document.getElementById('search-type');
   const tabs = document.querySelectorAll('.tab');
   const tabsContainer = document.getElementById('tabs-container');
   
@@ -413,6 +446,7 @@
   let tabPages = { now_playing: 1, top_rated: 1, popular: 1 };
   let tabTotalPages = { now_playing: 1, top_rated: 1, popular: 1 };
   let savedScrollY = 0;
+  let savedSearchScrollTop = 0;
 
   // --- MODAL AÇ/KAPAT ---
   function openModal() {
@@ -436,12 +470,17 @@
   function showSearchLayer() {
     layerSearch.style.display = 'block';
     layerDetail.style.display = 'none';
-    modalClose.classList.remove('visible');
+    // Arama listesinin scroll konumunu geri yükle
+    const searchContainer = layerSearch.querySelector('.search-container');
+    if (searchContainer) {
+      requestAnimationFrame(() => {
+        layerSearch.scrollTop = savedSearchScrollTop;
+      });
+    }
   }
   function showDetailLayer() {
     layerSearch.style.display = 'none';
     layerDetail.style.display = 'block';
-    modalClose.classList.add('visible');
   }
 
   // --- RESİM & FRAGMAN ---
@@ -521,7 +560,7 @@
     }
   }
 
-  // --- ARAMA (Önce oyuncu, yoksa film) ---
+  // --- ARAMA (Film veya Oyuncu seçimine göre) ---
   async function doSearch(query) {
     if (!query.trim()) return;
     isSearchMode = true;
@@ -529,19 +568,21 @@
     pageList.innerHTML = '<div class="msg">Aranıyor...</div>';
     
     let results = [];
+    const type = searchType.value;
     try {
-      const actorRes = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR&page=1`);
-      const actorData = await actorRes.json();
-      const person = actorData.results?.[0];
-      if (person) {
-        const creditsRes = await fetch(`https://api.themoviedb.org/3/person/${person.id}/movie_credits?api_key=${API_KEY}&language=tr-TR`);
-        const creditsData = await creditsRes.json();
-        results = (creditsData.cast || []).filter(m => m.release_date && m.title).sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
-      }
-      if (!person || results.length === 0) {
-        const filmRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR&page=1`);
-        const filmData = await filmRes.json();
-        results = filmData.results || [];
+      if (type === 'film') {
+        const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR&page=1`);
+        const data = await res.json();
+        results = data.results || [];
+      } else {
+        const res = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR&page=1`);
+        const data = await res.json();
+        const person = data.results?.[0];
+        if (person) {
+          const creditsRes = await fetch(`https://api.themoviedb.org/3/person/${person.id}/movie_credits?api_key=${API_KEY}&language=tr-TR`);
+          const creditsData = await creditsRes.json();
+          results = (creditsData.cast || []).filter(m => m.release_date && m.title).sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
+        }
       }
       showSearchResults(results, query);
     } catch {
@@ -549,15 +590,22 @@
     }
   }
 
-  // --- ARAMA SONUÇLARI ---
+  // --- ARAMA SONUÇLARI (Kaydırma korumalı) ---
   function showSearchResults(items, query) {
+    // Scroll konumunu kaydet (önceki arama sonucu varsa)
+    savedSearchScrollTop = layerSearch.scrollTop;
+    
     layerSearch.innerHTML = `
-      <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 20px; font-weight: 700; color: #fff;">"${query}" için sonuçlar</span>
+      <div class="search-container">
+        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 20px; font-weight: 700; color: #fff;">"${query}" için sonuçlar</span>
+        </div>
       </div>
     `;
+    const container = layerSearch.querySelector('.search-container');
+    
     if (!items || items.length === 0) {
-      layerSearch.innerHTML += '<div class="msg" style="color:#aaa;">Sonuç bulunamadı.</div>';
+      container.innerHTML += '<div class="msg" style="color:#aaa;">Sonuç bulunamadı.</div>';
     } else {
       items.forEach(item => {
         const card = document.createElement('div');
@@ -581,7 +629,7 @@
           else if (item.name) openActorDetailFromSearch(item.id);
           else openDetailFromSearch(item.id);
         });
-        layerSearch.appendChild(card);
+        container.appendChild(card);
       });
     }
     showSearchLayer();
@@ -677,7 +725,6 @@
   async function showDetail(movieId) {
     savedScrollY = window.scrollY;
     layerDetail.innerHTML = '<div class="msg" style="color:#aaa;">Yükleniyor...</div>';
-    // Ana sayfadan direkt detay açılırsa, arama katmanını gizle
     layerSearch.style.display = 'none';
     showDetailLayer();
     openModal();
@@ -809,12 +856,8 @@
   // --- OLAY DİNLEYİCİLERİ ---
   modalClose.addEventListener('click', () => {
     if (layerDetail.style.display === 'block') {
-      // Detay katmanı açıksa, kapatınca arama katmanına dön
+      // Detay katmanı açıksa, arama katmanına geri dön
       showSearchLayer();
-      // Arama katmanı boşsa veya gizliyse (ana sayfadan gelmişse) modalı tamamen kapat
-      if (layerSearch.style.display === 'none' || layerSearch.innerHTML.trim() === '') {
-        closeModal();
-      }
     } else {
       // Arama katmanı açıksa, modalı tamamen kapat
       closeModal();
