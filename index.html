@@ -109,10 +109,8 @@
     .page {
       display: none;
       padding: 12px;
-      animation: fade 0.2s;
     }
     .page.active { display: block; }
-    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
     /* --- Liste Kartı --- */
     .list-card {
@@ -265,7 +263,7 @@
     .msg { text-align: center; padding: 30px 10px; color: #888; font-size: 16px; }
     .back-btn { background: none; border: none; font-size: 28px; cursor: pointer; padding: 4px 0 12px 0; display: block; color: #333; }
 
-    /* --- Galeri Modal --- */
+    /* --- Galeri Modal (Düzeltildi) --- */
     #gallery-modal {
       position: fixed;
       inset: 0;
@@ -290,24 +288,22 @@
     #gallery-scroll {
       display: flex;
       overflow-x: auto;
-      gap: 12px;
+      gap: 10px;
       padding: 20px;
       width: 100%;
-      height: 80vh;
-      scroll-snap-type: x mandatory;
+      height: 85vh;
       scrollbar-width: none;
     }
     #gallery-scroll::-webkit-scrollbar { display: none; }
     #gallery-scroll img {
       height: 100%;
       width: auto;
-      max-width: 100%;
+      max-width: 95%;
       object-fit: contain;
-      scroll-snap-align: center;
       border-radius: 8px;
       user-select: none;
       -webkit-user-drag: none;
-      touch-action: pan-y pinch-zoom;
+      flex-shrink: 0;
     }
 
     /* --- Fragman Modal --- */
@@ -399,15 +395,14 @@
   let tabPages = { now_playing: 1, top_rated: 1, popular: 1 };
   let tabTotalPages = { now_playing: 1, top_rated: 1, popular: 1 };
   let lastSearchResults = [];
+  let lastSearchQuery = '';
 
-  // Sayfa geçişi (DOM korunarak)
   function showPage(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(pageId).classList.add('active');
   }
 
-  // Geri tuşu yönetimi (stabil)
-  window.addEventListener('popstate', (e) => {
+  window.addEventListener('popstate', () => {
     if (pageHistory.length > 1) {
       pageHistory.pop();
       const prev = pageHistory[pageHistory.length - 1];
@@ -415,24 +410,23 @@
       
       if (prev === 'page-list') {
         if (isSearchMode) {
-          // Arama modu geri döndü
           tabsContainer.style.display = 'none';
           if (lastSearchResults.length > 0) {
-            renderList(lastSearchResults, true);
+            // Listeyi yeniden oluşturma, sadece gizliyse göster
+            pageList.style.display = 'block';
           } else {
             pageList.innerHTML = '<div class="msg">Arama sonucu yok.</div>';
           }
         } else {
-          // Sekme modu geri döndü
           tabsContainer.style.display = 'flex';
-          loadTab(currentTab, tabPages[currentTab], false);
+          // Sekme listesini güncellemeden sadece göster
+          pageList.style.display = 'block';
         }
       }
     }
   });
 
   function navigateTo(pageId) {
-    // Eğer aynı sayfadaysak ekleme yapma
     if (pageHistory[pageHistory.length - 1] !== pageId) {
       pageHistory.push(pageId);
       showPage(pageId);
@@ -492,11 +486,12 @@
     }
   }
 
-  // --- ARAMA (PLAN A) ---
+  // --- ARAMA ---
   async function doSearch(query) {
     if (!query.trim()) return;
     isSearchMode = true;
     tabsContainer.style.display = 'none';
+    lastSearchQuery = query;
     lastSearchResults = [];
     pageList.innerHTML = '<div class="msg">Aranıyor...</div>';
 
@@ -541,6 +536,7 @@
   }
 
   function renderList(items, fromSearch) {
+    // Temizleme yapma, sadece içeriği değiştir
     pageList.innerHTML = '';
     if (!items || items.length === 0) {
       pageList.innerHTML = '<div class="msg">Sonuç bulunamadı.</div>';
@@ -624,12 +620,12 @@
     }
   }
 
-  // --- GALERİ ---
+  // --- GALERİ (Düzeltildi) ---
   function openGallery(images) {
     galleryScroll.innerHTML = '';
     const all = [...(images.posters || []), ...(images.backdrops || []), ...(images.stills || [])];
     if (all.length === 0) {
-      galleryScroll.innerHTML = '<div style="color:#fff;text-align:center;">Bu film için ek resim yok.</div>';
+      galleryScroll.innerHTML = '<div style="color:#fff;text-align:center;padding:40px;">Bu film için ek resim yok.</div>';
     } else {
       all.forEach(img => {
         const el = document.createElement('img');
@@ -653,9 +649,8 @@
     }
   });
 
-  // --- FRAGMAN (DÜZELTİLDİ) ---
+  // --- FRAGMAN ---
   function openTrailer(key) {
-    // YouTube'un güncel embed parametreleri
     trailerIframe.src = `https://www.youtube.com/embed/${key}?autoplay=1&enablejsapi=1&origin=${window.location.origin}`;
     trailerModal.classList.add('active');
     document.body.style.overflow = 'hidden';
