@@ -374,6 +374,11 @@
 </div>
 
 <script>
+  // TARAYICININ OTOMATİK SCROLL RESTORASYONUNU KAPAT
+  if (history.scrollRestoration) {
+    history.scrollRestoration = 'manual';
+  }
+
   const API_KEY = '4914230c4aaf1ff8599a892b0dfc71f4';
   const IMG_URL = 'https://image.tmdb.org/t/p/w500';
 
@@ -397,26 +402,24 @@
   let tabTotalPages = { now_playing: 1, top_rated: 1, popular: 1 };
   let lastSearchResults = [];
   
-  // --- YENİ GEZİNME SİSTEMİ (DOM'u korur, konumu kaydeder) ---
-  function navigateTo(pageId, scrollY = 0) {
-    // Tüm sayfaları gizle
+  // SCROLL KONUMUNU BURADA TUTACAĞIZ
+  let savedListScroll = 0;
+
+  // --- GEZİNME SİSTEMİ (SAYFALAR ARASI) ---
+  function navigateTo(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    
-    // Hedef sayfayı göster
-    const target = document.getElementById(pageId);
-    target.classList.add('active');
-    
-    // URL'ye durumu kaydet (scroll konumu ile birlikte)
-    history.pushState({ view: pageId, scrollY: scrollY }, '', '#' + pageId);
+    document.getElementById(pageId).classList.add('active');
+    // Sayfa değişimini geçmişe kaydet
+    history.pushState({ view: pageId }, '', '#' + pageId);
   }
 
-  // --- POPSTATE (GERİ / İLERİ TUSAŞI) YÖNETİMİ ---
+  // --- GERİ / İLERİ TUSAŞI YÖNETİMİ ---
   window.addEventListener('popstate', (e) => {
-    // Eğer bir modal açıksa, önce onu kapat (sadece modal kapanır, sayfa değişmez)
+    // Önce modalları kontrol et
     if (galleryModal.classList.contains('active')) {
       galleryModal.classList.remove('active');
       document.body.style.overflow = '';
-      return; // Bir sonraki geri tuşunda sayfa değişsin
+      return;
     }
     if (trailerModal.classList.contains('active')) {
       trailerModal.classList.remove('active');
@@ -425,15 +428,18 @@
       return;
     }
 
-    // Eğer state varsa, kaydedilen sayfayı ve scroll konumunu geri yükle
+    // Eğer state varsa sayfayı değiştir
     if (e.state && e.state.view) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.getElementById(e.state.view).classList.add('active');
-      
-      // Sayfayı en tepeye değil, kaydedilen konuma götür
-      requestAnimationFrame(() => {
-        window.scrollTo({ top: e.state.scrollY, behavior: 'instant' });
-      });
+
+      // Eğer ana listeye döndüysek, kaydedilen konuma git
+      if (e.state.view === 'page-list') {
+        // Scroll konumunu geri yükle (görünüm tamamen yüklendikten sonra)
+        requestAnimationFrame(() => {
+          window.scrollTo(0, savedListScroll);
+        });
+      }
     }
   });
 
@@ -526,6 +532,9 @@
       </div>
     `;
     card.addEventListener('click', () => {
+      // Detay sayfasına gitmeden önce mevcut scroll konumunu KAYDET
+      savedListScroll = window.scrollY;
+      
       if (item.media_type === 'movie' || item.title) {
         showDetail(item.id);
       } else if (item.media_type === 'person' || item.name) {
@@ -538,9 +547,6 @@
   }
 
   function renderList(items, fromSearch) {
-    // Mevcut scroll konumunu kaydet
-    const currentScroll = window.scrollY;
-    
     pageList.innerHTML = '';
     if (!items || items.length === 0) {
       pageList.innerHTML = '<div class="msg">Sonuç bulunamadı.</div>';
@@ -554,8 +560,12 @@
       updateLoadMore(currentTab);
     }
     
-    // Listeyi render ettikten sonra URL'yi güncelle (listeye git)
-    navigateTo('page-list', currentScroll);
+    // Liste render edildi, eğer burası geri dönüş ise scroll konumu zaten popstate'de restore edilecek.
+    // Ama eğer bir yeniden arama ise, en tepeye gitmek mantıklıdır.
+    if (fromSearch) {
+      savedListScroll = 0;
+      window.scrollTo(0, 0);
+    }
   }
 
   // --- OLAY DİNLEYİCİLERİ ---
@@ -566,6 +576,8 @@
         lastSearchResults = [];
         tabsContainer.style.display = 'flex';
       }
+      // Sekme değişiminde scroll'u sıfırla
+      savedListScroll = 0;
       loadTab(tab.dataset.tab);
     });
   });
@@ -580,8 +592,7 @@
   // --- FİLM DETAY ---
   async function showDetail(movieId) {
     pageDetail.innerHTML = '<div class="msg">Yükleniyor...</div>';
-    // Detay sayfasına git (scroll 0)
-    navigateTo('page-detail', 0);
+    navigateTo('page-detail'); // Geçmişe kaydet
     
     try {
       const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits,images,videos`);
@@ -681,7 +692,7 @@
   // --- OYUNCU DETAY ---
   async function showActorDetail(personId) {
     pageActor.innerHTML = '<div class="msg">Yükleniyor...</div>';
-    navigateTo('page-actor', 0);
+    navigateTo('page-actor');
     try {
       const res = await fetch(`https://api.themoviedb.org/3/person/${personId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
       const person = await res.json();
