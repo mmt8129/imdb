@@ -14,7 +14,6 @@
       padding-bottom: 80px;
     }
 
-    /* --- Üst Sekmeler --- */
     #tabs-container {
       background: #fff;
       display: flex;
@@ -36,9 +35,7 @@
       position: relative;
       user-select: none;
     }
-    .tab.active {
-      color: #333;
-    }
+    .tab.active { color: #333; }
     .tab.active::after {
       content: '';
       position: absolute;
@@ -51,7 +48,6 @@
     }
     .tab:active { opacity: 0.6; }
 
-    /* --- Alt sabit arama çubuğu --- */
     #search-bar {
       position: fixed;
       bottom: 0;
@@ -104,12 +100,8 @@
     }
     .search-wrapper .search-btn:active { transform: scale(0.95); }
 
-    /* --- Sayfa Konteyner --- */
-    #page-list {
-      padding: 12px;
-    }
+    #page-list { padding: 12px; }
 
-    /* --- Liste Kartı --- */
     .list-card {
       background: #fff;
       border-radius: 16px;
@@ -134,16 +126,8 @@
       justify-content: center;
       flex: 1;
     }
-    .list-card .info .title {
-      font-size: 18px;
-      font-weight: 700;
-      margin-bottom: 2px;
-    }
-    .list-card .info .meta {
-      font-size: 13px;
-      color: #777;
-      margin-bottom: 6px;
-    }
+    .list-card .info .title { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
+    .list-card .info .meta { font-size: 13px; color: #777; margin-bottom: 6px; }
     .list-card .info .meta .imdb {
       background: #f5c518;
       padding: 2px 8px;
@@ -177,7 +161,7 @@
     }
     .load-more-btn:active { transform: scale(0.97); }
 
-    /* --- ORTAK MODAL (Film & Oyuncu Detayı) --- */
+    /* --- ORTAK MODAL (Detay ve Arama Sonuçları) --- */
     #main-modal {
       position: fixed;
       inset: 0;
@@ -208,12 +192,8 @@
       padding: 4px 8px;
       line-height: 1;
     }
-    #modal-body {
-      padding: 0 16px 40px 16px;
-      color: #eee;
-    }
+    #modal-body { padding: 0 16px 40px 16px; color: #eee; }
     
-    /* Modal içi stiller */
     .modal-poster-wrap {
       position: relative;
       width: 100%;
@@ -295,7 +275,7 @@
 
     .msg { text-align: center; padding: 30px 10px; color: #888; font-size: 16px; }
 
-    /* --- BASİT RESİM GÖRÜNTÜLEYİCİ (Eski galeri yerine) --- */
+    /* --- BASİT RESİM GÖRÜNTÜLEYİCİ --- */
     #image-viewer {
       position: fixed;
       inset: 0;
@@ -378,7 +358,7 @@
   </div>
 </div>
 
-<!-- ANA MODAL (Film & Oyuncu Detayı) -->
+<!-- ANA MODAL -->
 <div id="main-modal">
   <div id="modal-header">
     <button id="modal-close">✕</button>
@@ -386,13 +366,13 @@
   <div id="modal-body"></div>
 </div>
 
-<!-- BASİT RESİM GÖRÜNTÜLEYİCİ -->
+<!-- RESİM GÖRÜNTÜLEYİCİ -->
 <div id="image-viewer">
   <button class="close-img" id="close-img">✕</button>
   <img id="viewer-img" src="" alt="Resim" />
 </div>
 
-<!-- Fragman Modal (Alt) -->
+<!-- FRAGMAN -->
 <div id="trailer-modal">
   <button class="close-trl" id="close-trl">✕</button>
   <iframe id="trailer-iframe" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
@@ -408,12 +388,10 @@
   const tabs = document.querySelectorAll('.tab');
   const tabsContainer = document.getElementById('tabs-container');
   
-  // Ana modal elemanları
   const mainModal = document.getElementById('main-modal');
   const modalBody = document.getElementById('modal-body');
   const modalClose = document.getElementById('modal-close');
   
-  // Basit resim görüntüleyici
   const imageViewer = document.getElementById('image-viewer');
   const viewerImg = document.getElementById('viewer-img');
   const closeImg = document.getElementById('close-img');
@@ -426,10 +404,9 @@
   let isSearchMode = false;
   let tabPages = { now_playing: 1, top_rated: 1, popular: 1 };
   let tabTotalPages = { now_playing: 1, top_rated: 1, popular: 1 };
-  let lastSearchResults = [];
   let savedScrollY = 0;
+  let lastSearchQuery = ''; // Son aramayı hatırla
 
-  // --- TEMEL İŞLEVLER ---
   function openModal() {
     mainModal.classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -440,10 +417,8 @@
     if (imageViewer.classList.contains('active')) closeImageViewer();
     if (trailerModal.classList.contains('active')) closeTrailer();
   }
-
   modalClose.addEventListener('click', closeModal);
 
-  // --- RESİM GÖRÜNTÜLEYİCİ ---
   function openImageViewer(src) {
     viewerImg.src = src;
     imageViewer.classList.add('active');
@@ -459,7 +434,6 @@
     if (e.target === imageViewer) closeImageViewer();
   });
 
-  // --- FRAGMAN ---
   function openTrailer(key) {
     trailerIframe.src = `https://www.youtube.com/embed/${key}?autoplay=1&enablejsapi=1&origin=${window.location.origin}`;
     trailerModal.classList.add('active');
@@ -473,7 +447,6 @@
     if (e.target === trailerModal) closeTrailer();
   });
 
-  // --- SEKME YÜKLEME ---
   async function loadTab(tab, page = 1, append = false) {
     currentTab = tab;
     isSearchMode = false;
@@ -521,36 +494,39 @@
     }
   }
 
-  // --- ARAMA (Önce Film, Olmazsa Oyuncu) ---
+  // --- YENİ ARAMA MANTIĞI (Önce oyuncu, yoksa film) ---
   async function doSearch(query) {
     if (!query.trim()) return;
     isSearchMode = true;
     tabsContainer.style.display = 'none';
-    lastSearchResults = [];
+    lastSearchQuery = query;
     pageList.innerHTML = '<div class="msg">Aranıyor...</div>';
     
     let results = [];
+    let foundActor = false;
+    
     try {
-      // 1. Film ara
-      const filmRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR&page=1`);
-      const filmData = await filmRes.json();
-      results = filmData.results || [];
+      // 1. Önce oyuncu ara (Sylvester Stallone için)
+      const actorRes = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR&page=1`);
+      const actorData = await actorRes.json();
+      const person = actorData.results?.[0];
       
-      // 2. Eğer film bulunamazsa oyuncu ara
-      if (results.length === 0) {
-        const actorRes = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR&page=1`);
-        const actorData = await actorRes.json();
-        const person = actorData.results?.[0];
-        if (person) {
-          const creditsRes = await fetch(`https://api.themoviedb.org/3/person/${person.id}/movie_credits?api_key=${API_KEY}&language=tr-TR`);
-          const creditsData = await creditsRes.json();
-          results = (creditsData.cast || []).filter(m => m.release_date && m.title).sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
-        }
+      if (person) {
+        // Oyuncu bulundu, filmlerini çek
+        const creditsRes = await fetch(`https://api.themoviedb.org/3/person/${person.id}/movie_credits?api_key=${API_KEY}&language=tr-TR`);
+        const creditsData = await creditsRes.json();
+        results = (creditsData.cast || []).filter(m => m.release_date && m.title).sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
+        foundActor = true;
       }
       
-      lastSearchResults = results;
+      // 2. Eğer oyuncu bulunamazsa (veya sonuç yoksa) film ara
+      if (!foundActor || results.length === 0) {
+        const filmRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR&page=1`);
+        const filmData = await filmRes.json();
+        results = filmData.results || [];
+      }
       
-      // 3. Sonuçları bir modal içinde göster
+      // Sonuçları modala bas
       showSearchResultsModal(results, query);
       
     } catch {
@@ -558,7 +534,7 @@
     }
   }
 
-  // --- ARAMA SONUÇLARI MODALI (YENİ) ---
+  // --- ARAMA SONUÇLARI MODALI (İçerik korunur) ---
   function showSearchResultsModal(items, query) {
     modalBody.innerHTML = `
       <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
@@ -586,7 +562,7 @@
           </div>
         `;
         card.addEventListener('click', () => {
-          closeModal();
+          closeModal(); // Modalı kapat
           setTimeout(() => {
             if (item.title) showDetail(item.id);
             else if (item.name) showActorDetail(item.id);
@@ -639,10 +615,12 @@
     }
   }
 
-  // --- OLAY DİNLEYİCİLERİ ---
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
-      if (isSearchMode) { isSearchMode = false; lastSearchResults = []; tabsContainer.style.display = 'flex'; }
+      if (isSearchMode) { 
+        isSearchMode = false; 
+        tabsContainer.style.display = 'flex'; 
+      }
       savedScrollY = 0;
       loadTab(tab.dataset.tab);
     });
@@ -650,7 +628,6 @@
   searchBtn.addEventListener('click', () => { doSearch(searchInput.value.trim()); });
   searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') doSearch(searchInput.value.trim()); });
 
-  // --- FİLM DETAY (MODAL) ---
   async function showDetail(movieId) {
     modalBody.innerHTML = '<div class="msg" style="color:#aaa;">Yükleniyor...</div>';
     openModal();
@@ -695,7 +672,6 @@
     } catch { modalBody.innerHTML = '<div class="msg" style="color:#aaa;">Hata oluştu.</div>'; }
   }
 
-  // --- OYUNCU DETAY (MODAL) ---
   async function showActorDetail(personId) {
     modalBody.innerHTML = '<div class="msg" style="color:#aaa;">Yükleniyor...</div>';
     openModal();
@@ -731,7 +707,6 @@
     } catch { modalBody.innerHTML = '<div class="msg" style="color:#aaa;">Hata oluştu.</div>'; }
   }
 
-  // --- BAŞLANGIÇ ---
   loadTab('now_playing');
 </script>
 </body>
