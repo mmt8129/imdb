@@ -263,7 +263,7 @@
     .msg { text-align: center; padding: 30px 10px; color: #888; font-size: 16px; }
     .back-btn { background: none; border: none; font-size: 28px; cursor: pointer; padding: 4px 0 12px 0; display: block; color: #333; }
 
-    /* --- Galeri Modal (Google Fotoğraflar Tarzı) --- */
+    /* --- Galeri Modal --- */
     #gallery-modal {
       position: fixed;
       inset: 0;
@@ -391,60 +391,57 @@
   const trailerIframe = document.getElementById('trailer-iframe');
   const closeTrl = document.getElementById('close-trl');
 
-  let pageHistory = ['list'];
   let currentTab = 'now_playing';
   let isSearchMode = false;
   let tabPages = { now_playing: 1, top_rated: 1, popular: 1 };
   let tabTotalPages = { now_playing: 1, top_rated: 1, popular: 1 };
   let lastSearchResults = [];
-  let lastScrollPosition = 0;
-
-  function showPage(pageId) {
+  
+  // --- YENİ GEZİNME SİSTEMİ (DOM'u korur, konumu kaydeder) ---
+  function navigateTo(pageId, scrollY = 0) {
+    // Tüm sayfaları gizle
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById(pageId).classList.add('active');
+    
+    // Hedef sayfayı göster
+    const target = document.getElementById(pageId);
+    target.classList.add('active');
+    
+    // URL'ye durumu kaydet (scroll konumu ile birlikte)
+    history.pushState({ view: pageId, scrollY: scrollY }, '', '#' + pageId);
   }
 
-  window.addEventListener('popstate', () => {
-    if (pageHistory.length > 1) {
-      pageHistory.pop();
-      const prev = pageHistory[pageHistory.length - 1];
-      showPage(prev);
+  // --- POPSTATE (GERİ / İLERİ TUSAŞI) YÖNETİMİ ---
+  window.addEventListener('popstate', (e) => {
+    // Eğer bir modal açıksa, önce onu kapat (sadece modal kapanır, sayfa değişmez)
+    if (galleryModal.classList.contains('active')) {
+      galleryModal.classList.remove('active');
+      document.body.style.overflow = '';
+      return; // Bir sonraki geri tuşunda sayfa değişsin
+    }
+    if (trailerModal.classList.contains('active')) {
+      trailerModal.classList.remove('active');
+      trailerIframe.src = '';
+      document.body.style.overflow = '';
+      return;
+    }
+
+    // Eğer state varsa, kaydedilen sayfayı ve scroll konumunu geri yükle
+    if (e.state && e.state.view) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(e.state.view).classList.add('active');
       
-      if (prev === 'page-list') {
-        if (isSearchMode) {
-          tabsContainer.style.display = 'none';
-          if (lastSearchResults.length > 0) {
-            renderList(lastSearchResults, true);
-          } else {
-            pageList.innerHTML = '<div class="msg">Arama sonucu yok.</div>';
-          }
-        } else {
-          tabsContainer.style.display = 'flex';
-          loadTab(currentTab, tabPages[currentTab], false);
-        }
-        // Geri dönüşte kaydırma konumunu geri yükle
-        if (lastScrollPosition > 0) {
-          requestAnimationFrame(() => {
-            window.scrollTo(0, lastScrollPosition);
-          });
-        }
-      }
+      // Sayfayı en tepeye değil, kaydedilen konuma götür
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: e.state.scrollY, behavior: 'instant' });
+      });
     }
   });
-
-  function navigateTo(pageId) {
-    if (pageHistory[pageHistory.length - 1] !== pageId) {
-      pageHistory.push(pageId);
-      showPage(pageId);
-      history.pushState(null, '', '#' + pageId);
-    } else {
-      showPage(pageId);
-    }
-  }
 
   // --- SEKME YÜKLEME ---
   async function loadTab(tab, page = 1, append = false) {
     currentTab = tab;
+    isSearchMode = false;
+    tabsContainer.style.display = 'flex';
     tabs.forEach(t => t.classList.remove('active'));
     document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
 
@@ -541,9 +538,9 @@
   }
 
   function renderList(items, fromSearch) {
-    // Mevcut kaydırma pozisyonunu hafızaya al
-    lastScrollPosition = window.scrollY;
-
+    // Mevcut scroll konumunu kaydet
+    const currentScroll = window.scrollY;
+    
     pageList.innerHTML = '';
     if (!items || items.length === 0) {
       pageList.innerHTML = '<div class="msg">Sonuç bulunamadı.</div>';
@@ -556,12 +553,9 @@
     if (!fromSearch && !isSearchMode) {
       updateLoadMore(currentTab);
     }
-    navigateTo('page-list');
-
-    // Listeyi yeniledikten sonra eski kaydırma konumuna geri dön
-    requestAnimationFrame(() => {
-      window.scrollTo(0, lastScrollPosition);
-    });
+    
+    // Listeyi render ettikten sonra URL'yi güncelle (listeye git)
+    navigateTo('page-list', currentScroll);
   }
 
   // --- OLAY DİNLEYİCİLERİ ---
@@ -586,7 +580,9 @@
   // --- FİLM DETAY ---
   async function showDetail(movieId) {
     pageDetail.innerHTML = '<div class="msg">Yükleniyor...</div>';
-    navigateTo('page-detail');
+    // Detay sayfasına git (scroll 0)
+    navigateTo('page-detail', 0);
+    
     try {
       const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits,images,videos`);
       const movie = await res.json();
@@ -594,7 +590,7 @@
       const trailer = movie.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
       
       let html = `
-        <button class="back-btn" onclick="goBack()">‹</button>
+        <button class="back-btn" onclick="history.back()">‹</button>
         <div class="detail-poster-wrap">
           <img src="${poster}" alt="${movie.title}" id="main-poster" />
         </div>
@@ -632,7 +628,7 @@
     }
   }
 
-  // --- GALERİ (Düzeltildi) ---
+  // --- GALERİ ---
   function openGallery(images) {
     galleryScroll.innerHTML = '';
     const all = [...(images.posters || []), ...(images.backdrops || []), ...(images.stills || [])];
@@ -685,13 +681,13 @@
   // --- OYUNCU DETAY ---
   async function showActorDetail(personId) {
     pageActor.innerHTML = '<div class="msg">Yükleniyor...</div>';
-    navigateTo('page-actor');
+    navigateTo('page-actor', 0);
     try {
       const res = await fetch(`https://api.themoviedb.org/3/person/${personId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
       const person = await res.json();
       const img = person.profile_path ? IMG_URL + person.profile_path : 'https://via.placeholder.com/100x140?text=No+Image';
       let html = `
-        <button class="back-btn" onclick="goBack()">‹</button>
+        <button class="back-btn" onclick="history.back()">‹</button>
         <div class="actor-detail-header">
           <img src="${img}" alt="${person.name}" />
           <div class="bio">
@@ -718,15 +714,6 @@
       pageActor.innerHTML = html;
     } catch (e) {
       pageActor.innerHTML = '<div class="msg">Hata oluştu.</div>';
-    }
-  }
-
-  function goBack() {
-    if (pageHistory.length > 1) {
-      pageHistory.pop();
-      const prev = pageHistory[pageHistory.length - 1];
-      showPage(prev);
-      history.back();
     }
   }
 
