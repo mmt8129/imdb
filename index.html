@@ -295,8 +295,8 @@
 
     .msg { text-align: center; padding: 30px 10px; color: #888; font-size: 16px; }
 
-    /* --- Galeri Modal (film resimleri için) --- */
-    #gallery-modal {
+    /* --- BASİT RESİM GÖRÜNTÜLEYİCİ (Eski galeri yerine) --- */
+    #image-viewer {
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.95);
@@ -305,10 +305,9 @@
       align-items: center;
       justify-content: center;
       flex-direction: column;
-      touch-action: none;
     }
-    #gallery-modal.active { display: flex; }
-    #gallery-modal .close-gal {
+    #image-viewer.active { display: flex; }
+    #image-viewer .close-img {
       position: absolute;
       top: 20px;
       right: 20px;
@@ -319,25 +318,13 @@
       border: none;
       z-index: 5001;
     }
-    #gallery-scroll {
-      display: flex;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      width: 100vw;
-      height: 100vh;
-      scrollbar-width: none;
-      touch-action: pan-y pinch-zoom;
-    }
-    #gallery-scroll::-webkit-scrollbar { display: none; }
-    #gallery-scroll img {
-      width: 100vw;
-      height: 100vh;
+    #image-viewer img {
+      max-width: 100%;
+      max-height: 90vh;
       object-fit: contain;
-      flex-shrink: 0;
-      scroll-snap-align: center;
       touch-action: pan-y pinch-zoom;
       user-select: none;
-      -webkit-user-drag: none;
+      border-radius: 8px;
     }
 
     /* --- Fragman Modal --- */
@@ -399,10 +386,10 @@
   <div id="modal-body"></div>
 </div>
 
-<!-- Galeri Modal (Alt) -->
-<div id="gallery-modal">
-  <button class="close-gal" id="close-gal">✕</button>
-  <div id="gallery-scroll"></div>
+<!-- BASİT RESİM GÖRÜNTÜLEYİCİ -->
+<div id="image-viewer">
+  <button class="close-img" id="close-img">✕</button>
+  <img id="viewer-img" src="" alt="Resim" />
 </div>
 
 <!-- Fragman Modal (Alt) -->
@@ -426,10 +413,11 @@
   const modalBody = document.getElementById('modal-body');
   const modalClose = document.getElementById('modal-close');
   
-  // Alt modaller
-  const galleryModal = document.getElementById('gallery-modal');
-  const galleryScroll = document.getElementById('gallery-scroll');
-  const closeGal = document.getElementById('close-gal');
+  // Basit resim görüntüleyici
+  const imageViewer = document.getElementById('image-viewer');
+  const viewerImg = document.getElementById('viewer-img');
+  const closeImg = document.getElementById('close-img');
+  
   const trailerModal = document.getElementById('trailer-modal');
   const trailerIframe = document.getElementById('trailer-iframe');
   const closeTrl = document.getElementById('close-trl');
@@ -449,17 +437,41 @@
   function closeModal() {
     mainModal.classList.remove('active');
     document.body.style.overflow = '';
-    // Kapatırken alt modalleri de kapat (güvenlik)
-    if (galleryModal.classList.contains('active')) {
-      galleryModal.classList.remove('active');
-    }
-    if (trailerModal.classList.contains('active')) {
-      trailerModal.classList.remove('active');
-      trailerIframe.src = '';
-    }
+    if (imageViewer.classList.contains('active')) closeImageViewer();
+    if (trailerModal.classList.contains('active')) closeTrailer();
   }
 
   modalClose.addEventListener('click', closeModal);
+
+  // --- RESİM GÖRÜNTÜLEYİCİ ---
+  function openImageViewer(src) {
+    viewerImg.src = src;
+    imageViewer.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeImageViewer() {
+    imageViewer.classList.remove('active');
+    document.body.style.overflow = '';
+    viewerImg.src = '';
+  }
+  closeImg.addEventListener('click', closeImageViewer);
+  imageViewer.addEventListener('click', (e) => {
+    if (e.target === imageViewer) closeImageViewer();
+  });
+
+  // --- FRAGMAN ---
+  function openTrailer(key) {
+    trailerIframe.src = `https://www.youtube.com/embed/${key}?autoplay=1&enablejsapi=1&origin=${window.location.origin}`;
+    trailerModal.classList.add('active');
+  }
+  function closeTrailer() {
+    trailerModal.classList.remove('active');
+    trailerIframe.src = '';
+  }
+  closeTrl.addEventListener('click', closeTrailer);
+  trailerModal.addEventListener('click', (e) => {
+    if (e.target === trailerModal) closeTrailer();
+  });
 
   // --- SEKME YÜKLEME ---
   async function loadTab(tab, page = 1, append = false) {
@@ -509,23 +521,82 @@
     }
   }
 
-  // --- ARAMA ---
+  // --- ARAMA (Önce Film, Olmazsa Oyuncu) ---
   async function doSearch(query) {
     if (!query.trim()) return;
     isSearchMode = true;
     tabsContainer.style.display = 'none';
     lastSearchResults = [];
     pageList.innerHTML = '<div class="msg">Aranıyor...</div>';
+    
+    let results = [];
     try {
-      const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR&page=1`);
-      const data = await res.json();
-      let results = data.results || [];
-      results = results.filter(item => item.media_type === 'movie' || item.media_type === 'person');
+      // 1. Film ara
+      const filmRes = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR&page=1`);
+      const filmData = await filmRes.json();
+      results = filmData.results || [];
+      
+      // 2. Eğer film bulunamazsa oyuncu ara
+      if (results.length === 0) {
+        const actorRes = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR&page=1`);
+        const actorData = await actorRes.json();
+        const person = actorData.results?.[0];
+        if (person) {
+          const creditsRes = await fetch(`https://api.themoviedb.org/3/person/${person.id}/movie_credits?api_key=${API_KEY}&language=tr-TR`);
+          const creditsData = await creditsRes.json();
+          results = (creditsData.cast || []).filter(m => m.release_date && m.title).sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
+        }
+      }
+      
       lastSearchResults = results;
-      renderList(results, true);
+      
+      // 3. Sonuçları bir modal içinde göster
+      showSearchResultsModal(results, query);
+      
     } catch {
       pageList.innerHTML = '<div class="msg">Arama hatası. Lütfen tekrar deneyin.</div>';
     }
+  }
+
+  // --- ARAMA SONUÇLARI MODALI (YENİ) ---
+  function showSearchResultsModal(items, query) {
+    modalBody.innerHTML = `
+      <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 20px; font-weight: 700; color: #fff;">"${query}" için sonuçlar</span>
+      </div>
+    `;
+    if (!items || items.length === 0) {
+      modalBody.innerHTML += '<div class="msg" style="color:#aaa;">Sonuç bulunamadı.</div>';
+    } else {
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'list-card';
+        card.style.cursor = 'pointer';
+        const poster = item.poster_path ? IMG_URL + item.poster_path : 'https://via.placeholder.com/200x300?text=No+Image';
+        const title = item.title || item.original_title || item.name || 'Bilinmiyor';
+        const year = item.release_date ? item.release_date.slice(0,4) : '';
+        const imdb = item.vote_average ? item.vote_average.toFixed(1) : '-';
+        const overview = item.overview || 'Açıklama yok.';
+        card.innerHTML = `
+          <img src="${poster}" alt="${title}" />
+          <div class="info">
+            <div class="title">${title}</div>
+            <div class="meta"><span class="imdb">⭐ ${imdb}</span> ${year}</div>
+            <div class="overview">${overview}</div>
+          </div>
+        `;
+        card.addEventListener('click', () => {
+          closeModal();
+          setTimeout(() => {
+            if (item.title) showDetail(item.id);
+            else if (item.name) showActorDetail(item.id);
+            else showDetail(item.id);
+          }, 150);
+        });
+        modalBody.appendChild(card);
+      });
+    }
+    openModal();
   }
 
   function createListCard(item) {
@@ -546,8 +617,8 @@
     `;
     card.addEventListener('click', () => {
       savedScrollY = window.scrollY;
-      if (item.media_type === 'movie' || item.title) showDetail(item.id);
-      else if (item.media_type === 'person' || item.name) showActorDetail(item.id);
+      if (item.title) showDetail(item.id);
+      else if (item.name) showActorDetail(item.id);
       else showDetail(item.id);
     });
     return card;
@@ -562,7 +633,6 @@
     items.forEach(item => { pageList.appendChild(createListCard(item)); });
     if (!fromSearch && !isSearchMode) updateLoadMore(currentTab);
     
-    // Ana sayfaya dönüşte scroll konumunu geri yükle
     if (savedScrollY > 0) {
       requestAnimationFrame(() => { window.scrollTo(0, savedScrollY); });
       savedScrollY = 0;
@@ -585,7 +655,7 @@
     modalBody.innerHTML = '<div class="msg" style="color:#aaa;">Yükleniyor...</div>';
     openModal();
     try {
-      const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits,images,videos`);
+      const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits,videos`);
       const movie = await res.json();
       const poster = movie.poster_path ? IMG_URL + movie.poster_path : 'https://via.placeholder.com/500x750?text=No+Image';
       const trailer = movie.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
@@ -619,7 +689,9 @@
       html += `</div>`;
       modalBody.innerHTML = html;
 
-      document.getElementById('m-poster').addEventListener('click', () => { openGallery(movie.images); });
+      document.getElementById('m-poster').addEventListener('click', () => {
+        openImageViewer(poster);
+      });
     } catch { modalBody.innerHTML = '<div class="msg" style="color:#aaa;">Hata oluştu.</div>'; }
   }
 
@@ -658,36 +730,6 @@
       modalBody.innerHTML = html;
     } catch { modalBody.innerHTML = '<div class="msg" style="color:#aaa;">Hata oluştu.</div>'; }
   }
-
-  // --- GALERİ (Alt Modal) ---
-  function openGallery(images) {
-    galleryScroll.innerHTML = '';
-    const all = [...(images.posters || []), ...(images.backdrops || []), ...(images.stills || [])];
-    if (all.length === 0) {
-      galleryScroll.innerHTML = '<div style="color:#fff;text-align:center;padding:40px;font-size:18px;width:100vw;">Bu film için ek resim yok.</div>';
-    } else {
-      all.forEach(img => {
-        const el = document.createElement('img');
-        el.src = IMG_URL + img.file_path;
-        el.alt = 'Film resmi';
-        el.draggable = false;
-        galleryScroll.appendChild(el);
-      });
-    }
-    galleryModal.classList.add('active');
-  }
-
-  closeGal.addEventListener('click', () => { galleryModal.classList.remove('active'); });
-  galleryModal.addEventListener('click', (e) => { if (e.target === galleryModal) galleryModal.classList.remove('active'); });
-
-  // --- FRAGMAN (Alt Modal) ---
-  function openTrailer(key) {
-    trailerIframe.src = `https://www.youtube.com/embed/${key}?autoplay=1&enablejsapi=1&origin=${window.location.origin}`;
-    trailerModal.classList.add('active');
-  }
-
-  closeTrl.addEventListener('click', () => { trailerModal.classList.remove('active'); trailerIframe.src = ''; });
-  trailerModal.addEventListener('click', (e) => { if (e.target === trailerModal) { trailerModal.classList.remove('active'); trailerIframe.src = ''; } });
 
   // --- BAŞLANGIÇ ---
   loadTab('now_playing');
