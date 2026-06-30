@@ -801,4 +801,23 @@
     }
   }
 
-  // --- OLAY DİNLEYİCİLERİ
+  // --- OLAY DİNLEYİCİLERİ ---
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      if (isSearchMode) { 
+        isSearchMode = false; 
+        tabsContainer.style.display = 'flex'; 
+        closeMainModal();
+      }
+      savedScrollY = 0;
+      loadTab(tab.dataset.tab);
+    });
+  });
+  searchBtn.addEventListener('click', () => { doSearch(searchInput.value.trim()); });
+  searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') doSearch(searchInput.value.trim()); });
+
+  // --- BAŞLANGIÇ ---
+  loadTab('now_playing');
+</script>
+</body>
+</html>
