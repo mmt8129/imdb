@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+  <title>Sohbet & Film</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f5f5f5;
+      color: #222;
+      padding-bottom: 80px;
+    }
+
+    #tabs-container {
+      background: #fff;
+      display: flex;
+      border-bottom: 1px solid #e0e0e0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      padding: 0 4px;
+    }
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 14px 0 10px 0;
+      font-size: 15px;
+      font-weight: 600;
+      color: #888;
+      cursor: pointer;
+      transition: 0.2s;
+      position: relative;
+      user-select: none;
+    }
+    .tab.active { color: #333; }
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 20%;
+      width: 60%;
+      height: 3px;
+      background: #4285F4;
+      border-radius: 3px 3px 0 0;
+    }
+    .tab:active { opacity: 0.6; }
+
+    #search-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 70px;
+      background: #fff;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0 8px;
+      z-index: 3000;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
+    }
+    .search-wrapper {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      max-width: 100%;
+      background: #f1f3f4;
+      border-radius: 30px;
+      padding: 4px 6px 4px 12px;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+      gap: 4px;
+    }
+    .search-wrapper input {
+      flex: 1;
+      height: 44px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+      background: transparent;
+      padding: 0 6px;
+      color: #333;
+      min-width: 0;
+    }
+    .search-wrapper input::placeholder { color: #888; }
+    .search-wrapper .search-btn {
+      height: 32px;
+      padding: 0 14px;
+      border: none;
+      border-radius: 30px;
+      background: #4285F4;
+      color: #fff;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: 0.2s;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .search-wrapper .search-btn:active { transform: scale(0.95); }
+
+    #page-list { padding: 12px; }
+
+    .chat-message {
+      display: flex;
+      margin-bottom: 16px;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .chat-message.user { justify-content: flex-end; }
+    .chat-message.ai { justify-content: flex-start; }
+
+    .bubble {
+      max-width: 85%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.55;
+      word-wrap: break-word;
+    }
+    .chat-message.user .bubble {
+      background: #4285F4;
+      color: #fff;
+      border-bottom-right-radius: 4px;
+      white-space: pre-wrap;
+    }
+    .chat-message.ai .bubble {
+      background: #fff;
+      color: #222;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .chat-message.ai .bubble .ai-label {
+      font-size: 11px;
+      color: #999;
+      font-weight: 600;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    /* --- AI CEVAP FORMATLAMA --- */
+    .ai-content .ai-heading {
+      display: block;
+      color: #d32f2f;
+      font-weight: 700;
+      font-size: 15px;
+      margin: 10px 0 2px 0;
+    }
+    .ai-content .ai-heading:first-child { margin-top: 0; }
+    .ai-content .ai-value {
+      display: block;
+      color: #333;
+      font-size: 14.5px;
+      margin-bottom: 4px;
+      line-height: 1.5;
+    }
+    .ai-content .ai-bullet {
+      display: block;
+      color: #333;
+      font-size: 14.5px;
+      margin: 4px 0;
+      padding-left: 4px;
+      line-height: 1.5;
+    }
+    .ai-content .ai-section {
+      display: block;
+      color: #d32f2f;
+      font-weight: 700;
+      font-size: 15px;
+      margin: 14px 0 6px 0;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #f0e0e0;
+    }
+    .ai-content .ai-section:first-child { margin-top: 0; }
+    .ai-content .ai-para {
+      display: block;
+      color: #333;
+      font-size: 14.5px;
+      margin: 4px 0 10px 0;
+      line-height: 1.6;
+    }
+    .ai-content pre {
+      background: #f0f0f0;
+      padding: 10px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 13px;
+    }
+    .ai-content a { color: #4285F4; text-decoration: none; }
+    .ai-content b { color: #222; }
+
+    .chat-cards {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 8px 0;
+      margin-top: 4px;
+      scrollbar-width: none;
+    }
+    .chat-cards::-webkit-scrollbar { display: none; }
+    .chat-card {
+      flex: 0 0 110px;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: 0.2s;
+      text-align: center;
+      padding-bottom: 8px;
+    }
+    .chat-card:active { transform: scale(0.96); }
+    .chat-card img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      display: block;
+    }
+    .chat-card .card-title {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 6px 0;
+      color: #333;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .chat-card .card-meta {
+      font-size: 10px;
+      color: #888;
+      padding: 2px 6px 0;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 4000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(2px);
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-window {
+      background: #ffffff;
+      border-radius: 20px;
+      max-width: 600px;
+      width: 94%;
+      max-height: 92vh;
+      overflow-y: auto;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 16px 16px 30px 16px;
+      animation: modalIn 0.2s ease-out;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.96) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 30px;
+      background: #ffffff;
+      padding: 4px 0 12px 0;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding-right: 16px;
+      z-index: 10;
+      border-bottom: 1px solid #eee;
+      margin-bottom: 12px;
+    }
+    #modal-body {
+      padding: 60px 16px 40px 16px;
+      color: #333;
+      position: relative;
+    }
+    .modal-header button {
+      background: transparent;
+      border: none;
+      color: #333;
+      font-size: 26px;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+    }
+    .msg { text-align: center; padding: 30px 10px; color: #888; font-size: 16px; }
+
+    .list-card {
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      display: flex;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .list-card:active { transform: scale(0.98); }
+    .list-card img {
+      width: 120px;
+      min-height: 120px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .list-card .info {
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      flex: 1;
+    }
+    .list-card .info .title { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
+    .list-card .info .meta { font-size: 13px; color: #777; margin-bottom: 6px; }
+    .list-card .info .meta .imdb {
+      background: #f5c518;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 700;
+      color: #000;
+      display: inline-block;
+      font-size: 12px;
+      margin-right: 6px;
+    }
+    .list-card .info .overview {
+      font-size: 14px;
+      color: #555;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .load-more-btn {
+      width: 100%;
+      padding: 12px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #4285F4;
+      cursor: pointer;
+      transition: 0.2s;
+      margin-bottom: 20px;
+    }
+    .load-more-btn:active { transform: scale(0.97); }
+
+    .modal-poster-wrap {
+      position: relative;
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .modal-poster-wrap img {
+      width: 100%;
+      display: block;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .modal-actions button {
+      flex: 1;
+      min-width: 100px;
+      padding: 10px 0;
+      border: none;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .modal-actions button:active { transform: scale(0.95); }
+    .modal-actions .google-btn { background: #4285F4; color: #fff; }
+    .modal-actions .trailer-btn { background: #e50914; color: #fff; }
+
+    .modal-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .modal-original { font-size: 16px; color: #777; margin-bottom: 8px; }
+    .modal-meta { font-size: 14px; color: #666; margin-bottom: 12px; }
+    .modal-overview {
+      font-size: 16px;
+      line-height: 1.5;
+      color: #444;
+      margin-bottom: 20px;
+      background: #f5f5f5;
+      padding: 14px;
+      border-radius: 12px;
+    }
+    .modal-section-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; margin-top: 10px; }
+    
+    .actor-scroll {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scrollbar-width: none;
+    }
+    .actor-scroll::-webkit-scrollbar { display: none; }
+    .actor-card {
+      flex: 0 0 100px;
+      background: #f5f5f5;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      cursor: pointer;
+      text-align: center;
+      padding-bottom: 6px;
+    }
+    .actor-card img { width: 100%; height: 120px; object-fit: cover; }
+    .actor-card .name { font-size: 13px; font-weight: 600; margin: 4px 0 0; color: #333; }
+    .actor-card .char { font-size: 11px; color: #777; }
+
+    .actor-detail-header {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .actor-detail-header img { width: 100px; height: 140px; object-fit: cover; border-radius: 12px; }
+    .actor-detail-header .bio { flex: 1; font-size: 14px; line-height: 1.4; color: #444; }
+    .actor-detail-header h2 { margin: 0 0 8px 0; color: #333; }
+
+    #image-viewer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 5000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    #image-viewer-overlay.active { display: flex; }
+    #image-viewer-overlay .close-img {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: #fff;
+      font-size: 36px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      z-index: 5001;
+    }
+    #image-viewer-overlay img {
+      max-width: 94%;
+      max-height: 90vh;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    #trailer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 6000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    #trailer-overlay.active { display: flex; }
+    #trailer-overlay .close-trl {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: #fff;
+      font-size: 36px;
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+    #trailer-overlay iframe {
+      width: 90vw;
+      max-width: 800px;
+      height: 50vw;
+      max-height: 450px;
+      border-radius: 12px;
+      border: none;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    .typing-dots { display: flex; gap: 4px; padding: 4px 0; }
+    .typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: #999; animation: dotBounce 1.4s infinite ease-in-out; }
+    .typing-dots span:nth-child(1) { animation-delay: 0s; }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dotBounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-6px); opacity: 1; } }
+
+    .chat-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      padding: 6px 12px 0;
+    }
+    .chat-toolbar button {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      cursor: pointer;
+    }
+    .chat-toolbar button:active { background: #f1f1f1; }
+  </style>
+</head>
+<body>
+
+<div id="tabs-container">
+  <div class="tab active" data-tab="chat">Sohbet</div>
+  <div class="tab" data-tab="now_playing">Vizyondakiler</div>
+  <div class="tab" data-tab="top_rated">IMDb En Yüksek</div>
+  <div class="tab" data-tab="popular">Popüler</div>
+</div>
+
+<div class="chat-toolbar" id="chatToolbar" style="display:none;">
+  <button onclick="clearChat()">🗑️ Sohbeti Temizle</button>
+</div>
+
+<div id="page-list"></div>
+
+<div id="search-bar">
+  <div class="search-wrapper">
+    <input type="text" id="search-input" placeholder="Mesaj yaz veya film sor..." autocomplete="off" />
+    <button class="search-btn" id="search-btn">Gönder</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="detail-modal-overlay">
+  <div class="modal-window" id="detail-modal-window">
+    <div class="modal-header">
+      <button id="close-detail-modal">✕</button>
+    </div>
+    <div id="detail-modal-body"></div>
+  </div>
+</div>
+
+<div id="image-viewer-overlay">
+  <button class="close-img" id="close-img">✕</button>
+  <img id="viewer-img" src="" alt="Resim" />
+</div>
+
+<div id="trailer-overlay">
+  <button class="close-trl" id="close-trl">✕</button>
+  <iframe id="trailer-iframe" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
+</div>
+
+<script>
+  const API_KEY = '4914230c4aaf1ff8599a892b0dfc71f4';
+  const GROQ_KEY = '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';
+  const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+  const GROQ_MODEL = 'openai/gpt-oss-120b';
+  const IMG_URL = 'https://image.tmdb.org/t/p/w500';
+  const HISTORY_KEY = 'chat_history_v2';
+
+  const pageList = document.getElementById('page-list');
+  const searchInput = document.getElementById('search-input');
+  const searchBtn = document.getElementById('search-btn');
+  const tabs = document.querySelectorAll('.tab');
+  const tabsContainer = document.getElementById('tabs-container');
+  const chatToolbar = document.getElementById('chatToolbar');
+
+  const detailOverlay = document.getElementById('detail-modal-overlay');
+  const detailBody = document.getElementById('detail-modal-body');
+  const closeDetail = document.getElementById('close-detail-modal');
+
+  const imageOverlay = document.getElementById('image-viewer-overlay');
+  const viewerImg = document.getElementById('viewer-img');
+  const closeImg = document.getElementById('close-img');
+
+  const trailerOverlay = document.getElementById('trailer-overlay');
+  const trailerIframe = document.getElementById('trailer-iframe');
+  const closeTrl = document.getElementById('close-trl');
+
+  let currentTab = 'chat';
+  let isSearchMode = false;
+  let tabPages = { now_playing: 1, top_rated: 1, popular: 1 };
+  let tabTotalPages = { now_playing: 1, top_rated: 1, popular: 1 };
+  let chatHistory = [];
+  let isSending = false;
+
+  // --- GEÇMİŞ ---
+  function loadHistory() {
+    try {
+      const raw = localStorage.getItem(HISTORY_KEY);
+      if (raw) chatHistory = JSON.parse(raw);
+    } catch { chatHistory = []; }
+  }
+  function saveHistory() {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(chatHistory)); } catch {}
+  }
+  function clearChat() {
+    if (!confirm('Sohbet geçmişini silmek istiyor musun?')) return;
+    chatHistory = [];
+    saveHistory();
+    renderChat();
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"]/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[s]));
+  }
+
+  // ============================================================
+  // AI CEVABI FORMATLAMA (Sembol sızıntısı düzeltildi)
+  // ============================================================
+  function formatAIResponse(text) {
+    let t = String(text);
+
+    // 1) Kaynak referanslarını sil: 【...】
+    t = t.replace(/【[^】]*】/g, '');
+    t = t.replace(/\[\d+†[^\]]*\]/g, '');
+    t = t.replace(/\[\d+\]/g, '');
+    // TMDB etiketini kullanıcıdan gizle
+    t = t.replace(/\[TMDB:[^\]]*\]/gi, '');
+
+    // 2) HTML escape
+    t = escapeHtml(t);
+
+    // 3) Kod bloklarını geçici sakla
+    const codeBlocks = [];
+    t = t.replace(/```([\s\S]*?)```/g, (m, code) => {
+      codeBlocks.push(code);
+      return `@@CODE_${codeBlocks.length - 1}@@`;
+    });
+
+    // 4) Fazla boşlukları normalize et
+    t = t.replace(/[ \t]+\n/g, '\n');
+    t = t.replace(/\n{3,}/g, '\n\n');
+
+    // 5) Satır bazlı işleme
+    const lines = t.split('\n');
+    const out = [];
+
+    for (let raw of lines) {
+      let line = raw.trim();
+      if (!line) { out.push(''); continue; }
+
+      // Başlık satırı: **Kalın** ya da ### veya ## veya #
+      let headingMatch = line.match(/^#{1,6}\s+(.+)$/) || line.match(/^\*\*(.+?)\*\*\s*[:：]?\s*$/);
+      if (headingMatch) {
+        const heading = headingMatch[1].replace(/\*\*/g, '').replace(/[:：]\s*$/, '').trim();
+        out.push('<SECTION>' + heading);
+        continue;
+      }
+
+      // Madde işareti
+      let bulletMatch = line.match(/^[\-\*•]\s+(.+)$/);
+      if (bulletMatch) {
+        let content = bulletMatch[1].replace(/\*\*/g, '').trim();
+        out.push('<BULLET>' + content);
+        continue;
+      }
+
+      // Normal paragraf
+      line = line.replace(/\*\*/g, '');
+      line = line.replace(/\(\s*\)/g, '');
+      out.push('<PARA>' + line);
+    }
+
+    // 6) HTML'e çevir
+    let html = '';
+    for (let l of out) {
+      if (l === '') { html += '<div style="height:8px;"></div>'; continue; }
+      if (l.startsWith('<SECTION>')) {
+        html += `<span class="ai-section">${l.substring(9)}</span>`;
+      } else if (l.startsWith('<BULLET>')) {
+        html += `<span class="ai-bullet">🔹 ${l.substring(8)}</span>`;
+      } else if (l.startsWith('<PARA>')) {
+        html += `<span class="ai-para">${l.substring(6)}</span>`;
+      } else {
+        html += `<span class="ai-para">${l}</span>`;
+      }
+    }
+
+    // 7) Kod bloklarını geri koy
+    html = html.replace(/@@CODE_(\d+)@@/g, (m, i) => `<pre>${escapeHtml(codeBlocks[i])}</pre>`);
+
+    return html;
+  }
+
+  // --- SOHBET RENDER ---
+  function renderChat() {
+    pageList.innerHTML = '';
+    chatToolbar.style.display = chatHistory.length > 0 ? 'flex' : 'none';
+    if (chatHistory.length === 0) {
+      pageList.innerHTML = '<div class="msg">Merhaba! Film sorabilir ya da normal sohbet edebilirsin.<br><br><small style="color:#aaa;">Örnek: "Bugün Ankara\'da hava kaç derece?", "Terminatör filminin oyuncuları kim?", "Inception konusu ne?"</small></div>';
+      return;
+    }
+    chatHistory.forEach((msg) => {
+      const div = document.createElement('div');
+      div.className = 'chat-message ' + (msg.role === 'user' ? 'user' : 'ai');
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      if (msg.role === 'ai') {
+        if (msg.pending) {
+          bubble.innerHTML = '<div class="ai-label">AI</div><div class="typing-dots"><span></span><span></span><span></span></div>';
+        } else {
+          bubble.innerHTML = '<div class="ai-label">AI</div><div class="ai-content">' + formatAIResponse(msg.content) + '</div>';
+        }
+      } else {
+        bubble.textContent = msg.content;
+      }
+      div.appendChild(bubble);
+
+      // Film Kartları
+      if (msg.role === 'ai' && msg.cards && msg.cards.length > 0) {
+        const cardsWrap = document.createElement('div');
+        cardsWrap.className = 'chat-cards';
+        msg.cards.forEach(card => {
+          const el = document.createElement('div');
+          el.className = 'chat-card';
+          el.innerHTML = `
+            <img src="${card.poster}" alt="${escapeHtml(card.title)}" />
+            <div class="card-title">${escapeHtml(card.title)}</div>
+            <div class="card-meta">⭐ ${card.rating} · ${card.year}</div>
+          `;
+          el.addEventListener('click', () => openDetail(card.id, 'movie'));
+          cardsWrap.appendChild(el);
+        });
+        bubble.appendChild(cardsWrap);
+      }
+
+      // Oyuncu Kartları (sadece oyuncu sorulduğunda)
+      if (msg.role === 'ai' && msg.cast && msg.cast.length > 0) {
+        const castWrap = document.createElement('div');
+        castWrap.className = 'chat-cards';
+        msg.cast.forEach(actor => {
+          const el = document.createElement('div');
+          el.className = 'chat-card';
+          el.innerHTML = `
+            <img src="${actor.poster}" alt="${escapeHtml(actor.name)}" />
+            <div class="card-title">${escapeHtml(actor.name)}</div>
+            <div class="card-meta" style="font-size:9px;">${escapeHtml(actor.character)}</div>
+          `;
+          el.addEventListener('click', () => openDetail(actor.id, 'actor'));
+          castWrap.appendChild(el);
+        });
+        bubble.appendChild(castWrap);
+      }
+
+      div.appendChild(bubble);
+      pageList.appendChild(div);
+    });
+    window.scrollTo(0, document.body.scrollHeight);
+  }
+
+  // --- GÖNDER ---
+  async function handleSend(text) {
+    if (!text.trim() || isSending) return;
+    isSending = true;
+
+    chatHistory.push({ role: 'user', content: text.trim() });
+    const aiMsg = { role: 'ai', content: '', pending: true, cards: [], cast: [] };
+    chatHistory.push(aiMsg);
+    saveHistory();
+    renderChat();
+
+    let aiText = '';
+    try {
+      const messages = [
+        { role: 'system', content: `Sen yardımcı bir asistansın. Güncel bilgi gerektiren sorularda web araması yapabilirsin. Film, dizi veya oyuncu hakkında soru sorulursa kısa ve net cevap ver. 
+Cevabın EN SONUNA mutlaka şu formatta bir etiket ekle:
+- Eğer film hakkında bilgi, konu, puan soruluyorsa: [TMDB: Film Adı | info]
+- Eğer filmdeki oyuncular/kadro soruluyorsa: [TMDB: Film Adı | cast]
+- Eğer bir oyuncu hakkında bilgi soruluyorsa: [TMDB: Oyuncu Adı | person]
+- Eğer normal sohbet/hava durumu vb. ise etiket ekleme.
+Cevap metnini tablo, dikey çizgi (|) veya kaynak referansı (【...】) KULLANMADAN sadece düz metin ve **kalın** başlıklarla yaz. Türkçe cevap ver.` }
+      ];
+      chatHistory.slice(0, -1).slice(-8).forEach(m => {
+        if (!m.pending) messages.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content });
+      });
+
+      const res = await fetch(GROQ_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + GROQ_KEY
+        },
+        body: JSON.stringify({
+          model: GROQ_MODEL,
+          messages: messages,
+          tools: [{ type: 'browser_search' }],
+          tool_choice: 'auto',
+          temperature: 0.7,
+          max_tokens: 1024
+        })
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.log('Groq hata:', res.status, errText);
+        aiText = 'Üzgünüm, cevap alınamadı. (' + res.status + ')';
+      } else {
+        const data = await res.json();
+        aiText = data.choices?.[0]?.message?.content || 'Cevap alınamadı.';
+      }
+    } catch (e) {
+      console.log('Fetch hatası:', e);
+      aiText = 'Bağlantı hatası. Lütfen tekrar dene.';
+    }
+
+    // TMDB verilerini çek (Hem film hem oyuncu)
+    const tmdbResult = await parseTMDBIntent(aiText, text);
+
+    const last = chatHistory[chatHistory.length - 1];
+    last.content = aiText;
+    last.cards = tmdbResult.cards;
+    last.cast = tmdbResult.cast;
+    last.pending = false;
+    saveHistory();
+    renderChat();
+    isSending = false;
+  }
+
+  // --- TMDB NİYET ÇÖZÜMLEYİCİ (Yeni Mantık) ---
+  async function parseTMDBIntent(aiText, userText) {
+    let cards = [];
+    let cast = [];
+
+    // AI cevabından [TMDB: İsim | tip] etiketini ayıkla
+    const tagMatch = aiText.match(/\[TMDB:\s*(.*?)\s*\|\s*(info|cast|person)\s*\]/i);
+    
+    if (tagMatch) {
+      const query = tagMatch[1].trim();
+      const type = tagMatch[2].toLowerCase();
+
+      try {
+        if (type === 'person') {
+          // Oyuncu araması
+          const res = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR&page=1`);
+          const data = await res.json();
+          const person = data.results?.[0];
+          if (person) {
+            const img = person.profile_path ? IMG_URL + person.profile_path : 'https://via.placeholder.com/110x150?text=No+Image';
+            cast.push({ id: person.id, name: person.name, character: 'Oyuncu', poster: img });
+          }
+        } else {
+          // Film araması
+          const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR&page=1`);
+          const data = await res.json();
+          const movie = data.results?.[0];
+          
+          if (movie) {
+            // Film bilgi kartı
+            cards.push({
+              id: movie.id,
+              title: movie.title || movie.original_title,
+              year: movie.release_date ? movie.release_date.slice(0,4) : '',
+              rating: movie.vote_average ? movie.vote_average.toFixed(1) : '-',
+              poster: movie.poster_path ? IMG_URL + movie.poster_path : 'https://via.placeholder.com/110x150?text=No+Image'
+            });
+
+            // Eğer cast istendiyse oyuncuları çek
+            if (type === 'cast') {
+              const castRes = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}/credits?api_key=${API_KEY}&language=tr-TR`);
+              const castData = await castRes.json();
+              const movieCast = (castData.cast || []).slice(0, 8); // İlk 8 oyuncu
+              
+              cast = movieCast.map(actor => ({
+                id: actor.id,
+                name: actor.name,
+                character: actor.character || 'Bilinmiyor',
+                poster: actor.profile_path ? IMG_URL + actor.profile_path : 'https://via.placeholder.com/110x150?text=No+Image'
+              }));
+            }
+          }
+        }
+      } catch (err) {
+        console.log('TMDB hata:', err);
+      }
+    } else {
+      // Eski sistem (Fallback): Eğer model etiket eklemeyi unuttuysa, metinden tahmin et
+      const lower = userText.toLowerCase();
+      const isCastRequest = lower.includes('oyuncu') || lower.includes('kadro');
+      const isMovieRequest = lower.includes('film') || lower.includes('konu') || lower.includes('puan');
+
+      if (isMovieRequest || isCastRequest) {
+        let query = userText.replace(/filmi|filmin|oyuncuları|oyuncular|oyuncu|konusu|puanı|puan|kadrosu|kadro|hakkında|bilgi|ver|kim|ne/gi, '').trim();
+        if (query.length > 1) {
+          const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR&page=1`);
+          const data = await res.json();
+          const movie = data.results?.[0];
+          if (movie) {
+            cards.push({
+              id: movie.id,
+              title: movie.title || movie.original_title,
+              year: movie.release_date ? movie.release_date.slice(0,4) : '',
+              rating: movie.vote_average ? movie.vote_average.toFixed(1) : '-',
+              poster: movie.poster_path ? IMG_URL + movie.poster_path : 'https://via.placeholder.com/110x150?text=No+Image'
+            });
+            if (isCastRequest) {
+               const castRes = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}/credits?api_key=${API_KEY}&language=tr-TR`);
+               const castData = await castRes.json();
+               cast = (castData.cast || []).slice(0, 8).map(actor => ({
+                 id: actor.id, name: actor.name, character: actor.character || '', poster: actor.profile_path ? IMG_URL + actor.profile_path : 'https://via.placeholder.com/110x150?text=No+Image'
+               }));
+            }
+          }
+        }
+      }
+    }
+
+    return { cards, cast };
+  }
+
+  // --- SEKME ---
+  async function loadTab(tab, page = 1, append = false) {
+    currentTab = tab;
+    isSearchMode = false;
+    tabsContainer.style.display = 'flex';
+    tabs.forEach(t => t.classList.remove('active'));
+    document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+
+    if (tab === 'chat') {
+      chatToolbar.style.display = chatHistory.length > 0 ? 'flex' : 'none';
+      renderChat();
+      return;
+    }
+
+    chatToolbar.style.display = 'none';
+
+    if (!append) {
+      pageList.innerHTML = '<div class="msg">Yükleniyor...</div>';
+      tabPages[tab] = 1;
+    }
+    try {
+      const res = await fetch(`https://api.themoviedb.org/3/movie/${tab}?api_key=${API_KEY}&language=tr-TR&page=${page}`);
+      const data = await res.json();
+      tabTotalPages[tab] = data.total_pages || 1;
+
+      if (append) {
+        data.results.forEach(item => { pageList.appendChild(createListCard(item)); });
+        updateLoadMore(tab);
+      } else {
+        renderList(data.results || [], false);
+      }
+    } catch {
+      if (!append) pageList.innerHTML = '<div class="msg">Filmler yüklenemedi.</div>';
+    }
+  }
+
+  function updateLoadMore(tab) {
+    const oldBtn = document.querySelector('.load-more-btn');
+    if (oldBtn) oldBtn.remove();
+    if (tabPages[tab] < tabTotalPages[tab] && tabTotalPages[tab] > 1) {
+      const btn = document.createElement('button');
+      btn.className = 'load-more-btn';
+      btn.textContent = 'Devamını Göster';
+      btn.addEventListener('click', () => {
+        tabPages[tab]++;
+        loadTab(tab, tabPages[tab], true);
+      });
+      pageList.appendChild(btn);
+    }
+  }
+
+  function renderList(items, fromSearch) {
+    pageList.innerHTML = '';
+    if (!items || items.length === 0) {
+      pageList.innerHTML = '<div class="msg">Sonuç bulunamadı.</div>';
+      return;
+    }
+    items.forEach(item => { pageList.appendChild(createListCard(item)); });
+    if (!fromSearch && !isSearchMode) updateLoadMore(currentTab);
+  }
+
+  function createListCard(item) {
+    const card = document.createElement('div');
+    card.className = 'list-card';
+    const poster = item.poster_path ? IMG_URL + item.poster_path : 'https://via.placeholder.com/200x300?text=No+Image';
+    const title = item.title || item.original_title || item.name || 'Bilinmiyor';
+    const year = item.release_date ? item.release_date.slice(0,4) : '';
+    const imdb = item.vote_average ? item.vote_average.toFixed(1) : '-';
+    const overview = item.overview || 'Açıklama yok.';
+    card.innerHTML = `
+      <img src="${poster}" alt="${escapeHtml(title)}" />
+      <div class="info">
+        <div class="title">${escapeHtml(title)}</div>
+        <div class="meta"><span class="imdb">⭐ ${imdb}</span> ${year}</div>
+        <div class="overview">${escapeHtml(overview)}</div>
+      </div>
+    `;
+    card.addEventListener('click', () => openDetail(item.id, 'movie'));
+    return card;
+  }
+
+  // --- DETAY ---
+  async function openDetail(id, type = 'movie') {
+    detailBody.innerHTML = '<div class="msg" style="color:#888;">Yükleniyor...</div>';
+    detailOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    try {
+      if (type === 'movie') {
+        const res = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits,videos`);
+        const movie = await res.json();
+        const poster = movie.poster_path ? IMG_URL + movie.poster_path : 'https://via.placeholder.com/500x750?text=No+Image';
+        const trailer = movie.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+
+        let html = `
+          <div class="modal-poster-wrap">
+            <img src="${poster}" alt="${escapeHtml(movie.title)}" id="d-poster" />
+          </div>
+          <div class="modal-actions">
+            <button class="google-btn" onclick="window.open('https://www.google.com/search?q=${encodeURIComponent(movie.title + ' full izle')}','_blank')">Filmi İzle</button>
+            ${trailer ? `<button class="trailer-btn" onclick="openTrailer('${trailer.key}')">Fragmanı İzle</button>` : ''}
+          </div>
+          <div class="modal-title">${escapeHtml(movie.title)}</div>
+          <div class="modal-original">${escapeHtml(movie.original_title || '')}</div>
+          <div class="modal-meta">${movie.release_date ? movie.release_date.slice(0,4) : ''} · ${movie.genres ? movie.genres.map(g => g.name).join(', ') : ''}</div>
+          <div class="modal-overview">${escapeHtml(movie.overview || 'Konu yok.')}</div>
+          <div class="modal-section-title">Oyuncular</div>
+          <div class="actor-scroll">
+        `;
+        const cast = movie.credits?.cast || [];
+        cast.slice(0, 12).forEach(actor => {
+          const img = actor.profile_path ? IMG_URL + actor.profile_path : 'https://via.placeholder.com/100x120?text=No+Image';
+          html += `
+            <div class="actor-card" onclick="openDetail(${actor.id}, 'actor')">
+              <img src="${img}" alt="${escapeHtml(actor.name)}" />
+              <div class="name">${escapeHtml(actor.name)}</div>
+              <div class="char">${escapeHtml(actor.character || '')}</div>
+            </div>
+          `;
+        });
+        html += `</div>`;
+        detailBody.innerHTML = html;
+        document.getElementById('d-poster').addEventListener('click', () => openImageViewer(poster));
+      } else {
+        const res = await fetch(`https://api.themoviedb.org/3/person/${id}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
+        const person = await res.json();
+        const img = person.profile_path ? IMG_URL + person.profile_path : 'https://via.placeholder.com/100x140?text=No+Image';
+        let html = `
+          <div class="actor-detail-header">
+            <img src="${img}" alt="${escapeHtml(person.name)}" />
+            <div class="bio">
+              <h2>${escapeHtml(person.name)}</h2>
+              <p>${escapeHtml(person.biography || 'Biyografi yok.')}</p>
+            </div>
+          </div>
+          <div class="modal-section-title">Filmleri</div>
+        `;
+        const movies = person.credits?.cast || [];
+        movies.sort((a,b) => new Date(b.release_date) - new Date(a.release_date));
+        movies.slice(0, 20).forEach(m => {
+          const poster = m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No+Image';
+          html += `
+            <div class="list-card" onclick="closeDetailModal(); setTimeout(() => openDetail(${m.id}, 'movie'), 100);">
+              <img src="${poster}" alt="${escapeHtml(m.title)}" />
+              <div class="info">
+                <div class="title" style="color:#333;">${escapeHtml(m.title)}</div>
+                <div class="meta">${m.release_date ? m.release_date.slice(0,4) : ''} · ⭐ ${m.vote_average ? m.vote_average.toFixed(1) : '-'}</div>
+              </div>
+            </div>
+          `;
+        });
+        detailBody.innerHTML = html;
+      }
+    } catch {
+      detailBody.innerHTML = '<div class="msg" style="color:#888;">Hata oluştu.</div>';
+    }
+  }
+
+  function closeDetailModal() {
+    detailOverlay.classList.remove('active');
+    if (!imageOverlay.classList.contains('active') && !trailerOverlay.classList.contains('active')) {
+      document.body.style.overflow = '';
+    }
+  }
+  closeDetail.addEventListener('click', closeDetailModal);
+  detailOverlay.addEventListener('click', (e) => { if (e.target === detailOverlay) closeDetailModal(); });
+
+  function openImageViewer(src) {
+    viewerImg.src = src;
+    imageOverlay.classList.add('active');
+  }
+  function closeImageViewer() {
+    imageOverlay.classList.remove('active');
+    viewerImg.src = '';
+  }
+  closeImg.addEventListener('click', closeImageViewer);
+  imageOverlay.addEventListener('click', (e) => { if (e.target === imageOverlay) closeImageViewer(); });
+
+  function openTrailer(key) {
+    trailerIframe.src = `https://www.youtube.com/embed/${key}?autoplay=1`;
+    trailerOverlay.classList.add('active');
+  }
+  function closeTrailer() {
+    trailerOverlay.classList.remove('active');
+    trailerIframe.src = '';
+  }
+  closeTrl.addEventListener('click', closeTrailer);
+  trailerOverlay.addEventListener('click', (e) => { if (e.target === trailerOverlay) closeTrailer(); });
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      loadTab(tab.dataset.tab);
+    });
+  });
+
+  searchBtn.addEventListener('click', () => {
+    const text = searchInput.value.trim();
+    if (text) {
+      handleSend(text);
+      searchInput.value = '';
+    }
+  });
+  searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      const text = searchInput.value.trim();
+      if (text) {
+        handleSend(text);
+        searchInput.value = '';
+      }
+    }
+  });
+
+  loadHistory();
+  loadTab('chat');
+</script>
+</body>
+</html>
