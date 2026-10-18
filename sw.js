@@ -1,10 +1,10 @@
 const CACHE_NAME = 'film-app-v1';
 const ASSETS = [
-  './',
-  './index8.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
+  '/imdb/',
+  '/imdb/index8.html',
+  '/imdb/manifest.json',
+  '/imdb/icon-192.png',
+  '/imdb/icon-512.png'
 ];
 
 self.addEventListener('install', (e) => {
