@@ -2,7 +2,7 @@
   "name": "Sohbet & Film",
   "short_name": "Film App",
   "description": "Film keşfet, oyuncu ara, sohbet et",
-  "start_url": "./index.html",
+  "start_url": "/imdb/index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
