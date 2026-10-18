@@ -1,7 +1,7 @@
 const CACHE_NAME = 'film-app-v1';
 const ASSETS = [
   '/imdb/',
-  '/imdb/index8.html',
+  '/imdb/index.html',
   '/imdb/manifest.json',
   '/imdb/icon-192.png',
   '/imdb/icon-512.png'
