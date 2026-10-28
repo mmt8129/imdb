@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, interactive-widget=resizes-content" />
+  <title>Sohbet & Film</title>
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#4285F4" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Film App" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <style>
+    :root {
+      --bg: #f5f5f5; --text: #222; --card-bg: #fff; --border: #e0e0e0;
+      --input-bg: #f1f3f4; --text-muted: #888; --header-bg: #fff;
+      --modal-bg: #fff; --modal-text: #333; --hover: #f0f0f0;
+    }
+    body.dark-mode {
+      --bg: #121212; --text: #e0e0e0; --card-bg: #1e1e1e; --border: #333;
+      --input-bg: #2c2c2c; --text-muted: #aaa; --header-bg: #1e1e1e;
+      --modal-bg: #1e1e1e; --modal-text: #e0e0e0; --hover: #333;
+    }
+    
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); padding-bottom: 66px; transition: background 0.3s, color 0.3s; }
+
+    #tabs-container { background: var(--header-bg); display: flex; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; padding: 0 4px; overflow-x: auto; scrollbar-width: none; }
+    #tabs-container::-webkit-scrollbar { display: none; }
+    .tab { flex: 1; text-align: center; padding: 12px 0 9px 0; font-size: 12.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: 0.2s; position: relative; user-select: none; white-space: nowrap; min-width: 60px; }
+    .tab.active { color: var(--text); }
+    .tab.active::after { content: ''; position: absolute; bottom: 0; left: 20%; width: 60%; height: 3px; background: #4285F4; border-radius: 3px 3px 0 0; }
+
+    #genre-filter-container { padding: 4px 8px; background: var(--header-bg); }
+    #genre-filter { width: 100%; padding: 6px; border-radius: 8px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; font-size: 13px; }
+
+    .chat-toolbar { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); z-index: 100; display: none; }
+    .chat-toolbar.show { display: block; }
+    .chat-toolbar button { background: transparent; border: 1px solid var(--border); border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--text); cursor: pointer; text-shadow: 0 1px 4px var(--bg); }
+
+    #search-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 56px; background: var(--header-bg); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 8px; z-index: 3000; box-shadow: 0 -4px 12px rgba(0,0,0,0.06); }
+    .home-btn { width: 36px; height: 36px; border-radius: 50%; background: #e8f0fe; color: #1a73e8; border: none; font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0; }
+    body.dark-mode .home-btn { background: #333; color: #8ab4f8; }
+    .search-wrapper { display: flex; align-items: center; width: 100%; background: var(--input-bg); border-radius: 30px; padding: 3px 5px 3px 10px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); gap: 4px; }
+    .search-wrapper input { flex: 1; height: 36px; border: none; outline: none; font-size: 15px; background: transparent; padding: 0 6px; color: var(--text); min-width: 0; }
+    .search-wrapper input::placeholder { color: var(--text-muted); }
+    .search-wrapper .search-btn { height: 28px; padding: 0 12px; border: none; border-radius: 30px; background: #4285F4; color: #fff; font-weight: 600; font-size: 12px; cursor: pointer; flex-shrink: 0; }
+
+    #page-list { padding: 12px; }
+    .home-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; text-align: center; padding: 20px; }
+    .home-clock { font-size: 64px; font-weight: 200; color: var(--text); letter-spacing: -2px; line-height: 1; margin-bottom: 5px; }
+    .home-date { font-size: 16px; color: var(--text-muted); margin-bottom: 20px; font-weight: 500; text-transform: capitalize; }
+    .home-weather { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--card-bg); padding: 10px 20px; border-radius: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); cursor: pointer; margin-bottom: 30px; }
+    .home-weather .icon { font-size: 24px; }
+    .home-weather .temp { font-size: 20px; font-weight: 700; }
+    .home-weather .city { font-size: 14px; color: var(--text-muted); margin-left: 5px; }
+    .home-menu { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 300px; }
+    .home-menu button { padding: 16px; border-radius: 16px; border: none; background: var(--card-bg); color: var(--text); font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
+    .home-menu button:active { transform: scale(0.97); background: var(--hover); }
+    .theme-toggle { position: absolute; top: 80px; right: 20px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+    .chat-message { display: flex; margin-bottom: 16px; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .chat-message.user { justify-content: flex-end; }
+    .chat-message.ai { justify-content: flex-start; }
+    .bubble { max-width: 85%; padding: 12px 16px; border-radius: 18px; font-size: 15px; line-height: 1.55; word-wrap: break-word; }
+    .chat-message.user .bubble { background: #4285F4; color: #fff; border-bottom-right-radius: 4px; white-space: pre-wrap; }
+    .chat-message.ai .bubble { background: var(--card-bg); color: var(--text); border-bottom-left-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .ai-label { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; text-transform: uppercase; }
+    .ai-content .ai-section { display: block; color: #d32f2f; font-weight: 700; font-size: 15px; margin: 14px 0 6px 0; padding-bottom: 4px; border-bottom: 1px solid #f0e0e0; }
+    .ai-content .ai-bullet { display: block; color: var(--text); font-size: 14.5px; margin: 4px 0; padding-left: 4px; line-height: 1.5; }
+    .ai-content .ai-para { display: block; color: var(--text); font-size: 14.5px; margin: 4px 0 10px 0; line-height: 1.6; }
+
+    .chat-cards { display: flex; gap: 10px; overflow-x: auto; padding: 8px 0; margin-top: 4px; scrollbar-width: none; }
+    .chat-cards::-webkit-scrollbar { display: none; }
+    .chat-card { flex: 0 0 110px; background: var(--card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; transition: 0.2s; text-align: center; padding-bottom: 8px; }
+    .chat-card:active { transform: scale(0.96); }
+    .chat-card img { width: 100%; height: 150px; object-fit: cover; display: block; }
+    .chat-card .card-title { font-size: 12px; font-weight: 700; padding: 6px 6px 0; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-card .card-meta { font-size: 10px; color: var(--text-muted); padding: 2px 6px 0; }
+
+    .list-card { background: var(--card-bg); border-radius: 16px; overflow: hidden; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; cursor: pointer; transition: 0.2s; }
+    .list-card:active { transform: scale(0.98); }
+    .list-card img { width: 120px; min-height: 120px; object-fit: cover; flex-shrink: 0; }
+    .list-card .info { padding: 10px 14px; display: flex; flex-direction: column; justify-content: center; flex: 1; }
+    .list-card .info .title { font-size: 18px; font-weight: 700; margin-bottom: 2px; color: var(--text); }
+    .list-card .info .meta { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+    .list-card .info .meta .imdb { background: #f5c518; padding: 2px 8px; border-radius: 20px; font-weight: 700; color: #000; display: inline-block; font-size: 12px; margin-right: 6px; }
+    .list-card .info .overview { font-size: 14px; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .load-more-btn { width: 100%; padding: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; font-size: 16px; font-weight: 600; color: #4285F4; cursor: pointer; margin-bottom: 20px; }
+    .empty-msg { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 15px; }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 4000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+    .modal-overlay.active { display: flex; }
+    .modal-window { background: var(--modal-bg); border-radius: 20px; max-width: 600px; width: 94%; max-height: 92vh; overflow-y: auto; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.4); padding: 16px 16px 30px 16px; animation: modalIn 0.2s ease-out; color: var(--modal-text); }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .modal-header { position: sticky; top: -16px; margin: -16px -16px 12px -16px; background: var(--modal-bg); padding: 12px 16px; display: flex; justify-content: flex-end; align-items: center; z-index: 10; border-bottom: 1px solid var(--border); border-radius: 20px 20px 0 0; }
+    .modal-header button { background: transparent; border: none; color: var(--modal-text); font-size: 24px; cursor: pointer; padding: 0 4px; line-height: 1; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; }
+    .modal-header button:active { background: var(--hover); }
+    
+    .modal-poster-wrap { position: relative; width: 100%; border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+    .modal-poster-wrap img { width: 100%; display: block; border-radius: 12px; cursor: pointer; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+    .modal-actions button { flex: 1; min-width: 100px; padding: 10px 0; border: none; border-radius: 30px; font-weight: 600; font-size: 14px; cursor: pointer; transition: 0.2s; }
+    .modal-actions .google-btn { background: #4285F4; color: #fff; }
+    .modal-actions .trailer-btn { background: #e50914; color: #fff; }
+    .modal-actions .fav-btn { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); }
+    .modal-actions .fav-btn.saved { background: #ffd700; color: #000; border-color: #ffd700; }
+    .modal-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .modal-original { font-size: 16px; color: var(--text-muted); margin-bottom: 8px; }
+    .modal-meta { font-size: 14px; color: var(--text-muted); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .modal-meta .rating { background: #f5c518; color: #000; padding: 2px 8px; border-radius: 12px; font-weight: 700; font-size: 13px; }
+    .modal-overview { font-size: 16px; line-height: 1.5; color: var(--text); margin-bottom: 20px; background: var(--input-bg); padding: 14px; border-radius: 12px; position: relative; }
+    .modal-section-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; margin-top: 10px; color: var(--text); }
+    .source-badge { font-size: 11px; color: var(--text-muted); margin-top: 8px; display: block; font-style: italic; }
+    .ai-fetch-btn { background: #ff9800; color: #fff; border: none; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px; display: inline-block; box-shadow: 0 2px 6px rgba(255,152,0,0.3); }
+    .ai-fetch-btn:active { transform: scale(0.96); }
+    
+    .actor-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; }
+    .actor-scroll::-webkit-scrollbar { display: none; }
+    .actor-card { flex: 0 0 100px; background: var(--input-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.08); cursor: pointer; text-align: center; padding-bottom: 6px; }
+    .actor-card img { width: 100%; height: 120px; object-fit: cover; }
+    .actor-card .name { font-size: 13px; font-weight: 600; margin: 4px 0 0; color: var(--text); }
+    .actor-card .char { font-size: 11px; color: var(--text-muted); }
+
+    .actor-detail-header { display: flex; gap: 16px; margin-bottom: 16px; }
+    .actor-detail-header img { width: 100px; height: 140px; object-fit: cover; border-radius: 12px; cursor: pointer; }
+    .actor-detail-header .bio { flex: 1; font-size: 14px; line-height: 1.4; color: var(--text); }
+    .actor-detail-header h2 { margin: 0 0 8px 0; color: var(--text); }
+    .actor-info-list { margin-bottom: 16px; background: var(--input-bg); padding: 12px; border-radius: 12px; }
+    .actor-info-list div { margin-bottom: 6px; font-size: 14px; color: var(--text); }
+    .actor-info-list b { color: #d32f2f; margin-right: 5px; }
+
+    .weather-search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+    .weather-search-box input { flex: 1; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; background: var(--input-bg); color: var(--text); }
+    .weather-search-box button { padding: 12px 18px; background: var(--text); color: var(--bg); border: none; border-radius: 8px; cursor: pointer; font-weight: 700; }
+    .weather-current { text-align: center; padding: 16px 0 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+    .weather-current .wc-icon { font-size: 3rem; line-height: 1; margin-bottom: 6px; }
+    .weather-current .wc-temp { font-size: 2.2rem; font-weight: 700; }
+    .weather-current .wc-text { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+    .weather-forecast-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 10px; }
+    .weather-day-card { background: var(--input-bg); border: 1px solid var(--border); padding: 10px 3px; text-align: center; border-radius: 8px; }
+    .weather-day-card .day-name { font-weight: 600; font-size: 12px; }
+    .weather-day-card .day-icon { font-size: 1.4rem; margin: 5px 0; line-height: 1; }
+    .weather-day-card .day-temps { font-size: 12px; color: var(--text-muted); display: flex; flex-direction: column; gap: 2px; }
+    .weather-day-card .max { color: #d32f2f; font-weight: 700; }
+    .weather-day-card .min { color: #1976d2; font-weight: 600; }
+
+    .stat-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 15px; }
+    .stat-row b { color: #4285F4; }
+    .stat-section { margin-bottom: 20px; }
+    .stat-section h4 { margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; color: var(--text-muted); }
+    .stat-btns { display: flex; gap: 10px; margin-top: 20px; }
+    .stat-btns button { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text); cursor: pointer; }
+
+    #image-viewer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 5000; display: none; align-items: center; justify-content: center; }
+    #image-viewer-overlay.active { display: flex; }
+    #image-viewer-overlay .close-img { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 36px; cursor: pointer; background: none; border: none; }
+    #image-viewer-overlay img { max-width: 94%; max-height: 90vh; object-fit: contain; border-radius: 12px; }
+
+    #trailer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 6000; display: none; align-items: center; justify-content: center; }
+    #trailer-overlay.active { display: flex; }
+    #trailer-overlay .close-trl { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 36px; cursor: pointer; background: none; border: none; }
+    #trailer-overlay iframe { width: 90vw; max-width: 800px; height: 50vw; max-height: 450px; border-radius: 12px; border: none; }
+
+    .typing-dots { display: flex; gap: 4px; padding: 4px 0; }
+    .typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: #999; animation: dotBounce 1.4s infinite ease-in-out; }
+    .typing-dots span:nth-child(1) { animation-delay: 0s; }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dotBounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-6px); opacity: 1; } }
+  </style>
+</head>
+<body>
+
+<div id="tabs-container">
+  <div class="tab active" data-tab="home">🏠 Ev</div>
+  <div class="tab" data-tab="chat">💬 Sohbet</div>
+  <div class="tab" data-tab="now_playing">🎬 Vizyon</div>
+  <div class="tab" data-tab="top_rated">🏆 IMDb</div>
+  <div class="tab" data-tab="popular">🔥 Popüler</div>
+  <div class="tab" data-tab="favorites">⭐ Favori</div>
+  <div id="genre-filter-container" style="display: none;">
+    <select id="genre-filter" onchange="loadTab(currentTab)">
+      <option value="">Tüm Türler</option>
+      <option value="28">Aksiyon</option>
+      <option value="12">Macera</option>
+      <option value="16">Animasyon</option>
+      <option value="35">Komedi</option>
+      <option value="80">Suç</option>
+      <option value="99">Belgesel</option>
+      <option value="18">Dram</option>
+      <option value="10751">Aile</option>
+      <option value="14">Fantastik</option>
+      <option value="36">Tarih</option>
+      <option value="27">Korku</option>
+      <option value="10402">Müzik</option>
+      <option value="9648">Gizem</option>
+      <option value="10749">Romantik</option>
+      <option value="878">Bilim Kurgu</option>
+      <option value="10770">TV Film</option>
+      <option value="53">Gerilim</option>
+      <option value="10752">Savaş</option>
+      <option value="37">Vahşi Batı</option>
+    </select>
+  </div>
+</div>
+
+<div class="chat-toolbar" id="chatToolbar">
+  <button onclick="clearChat()">🗑️ Temizle</button>
+</div>
+
+<div id="page-list"></div>
+
+<div id="search-bar">
+  <button class="home-btn" onclick="loadTab('home')">🏠</button>
+  <div class="search-wrapper">
+    <input type="text" id="search-input" placeholder="Mesaj yaz veya film sor..." autocomplete="off" />
+    <button class="search-btn" id="search-btn">Gönder</button>
+  </div>
+</div>
+
+<!-- Film/Oyuncu Detay Modalı -->
+<div class="modal-overlay" id="detail-modal-overlay">
+  <div class="modal-window" id="detail-modal-window">
+    <div class="modal-header" id="detail-modal-header">
+      <button onclick="closeDetailModal()">✕</button>
+    </div>
+    <div id="detail-modal-body"></div>
+  </div>
+</div>
+
+<!-- Film/Oyuncu Arama Modalı -->
+<div class="modal-overlay" id="search-modal-overlay">
+  <div class="modal-window" id="search-modal-window">
+    <div class="modal-header" id="search-modal-header">
+      <button onclick="closeSearchModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="search-wrapper" style="margin-bottom: 16px;">
+        <input type="text" id="tmdb-search-input" placeholder="Film veya Oyuncu Ara..." autocomplete="off" />
+        <button class="search-btn" onclick="performTMDBManualSearch()">Ara</button>
+      </div>
+      <div id="tmdb-search-results"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Rastgele Film Bulma Modalı -->
+<div class="modal-overlay" id="random-modal-overlay">
+  <div class="modal-window" id="random-modal-window">
+    <div class="modal-header">
+      <h2 style="margin:0; font-size:18px;">🎲 Rastgele Film Bul</h2>
+      <button onclick="closeRandomModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom: 16px;">
+        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px;">Kategori</label>
+        <select id="random-genre" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); outline:none;">
+          <option value="">Tümü</option>
+          <option value="28">Aksiyon</option>
+          <option value="12">Macera</option>
+          <option value="16">Animasyon</option>
+          <option value="35">Komedi</option>
+          <option value="80">Suç</option>
+          <option value="99">Belgesel</option>
+          <option value="18">Dram</option>
+          <option value="10751">Aile</option>
+          <option value="14">Fantastik</option>
+          <option value="36">Tarih</option>
+          <option value="27">Korku</option>
+          <option value="10402">Müzik</option>
+          <option value="9648">Gizem</option>
+          <option value="10749">Romantik</option>
+          <option value="878">Bilim Kurgu</option>
+          <option value="10770">TV Film</option>
+          <option value="53">Gerilim</option>
+          <option value="10752">Savaş</option>
+          <option value="37">Vahşi Batı</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 20px;">
+        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:14px;">Min. IMDb Puanı</label>
+        <select id="random-rating" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); outline:none;">
+          <option value="">Tümü</option>
+          <option value="5">5 ve üzeri</option>
+          <option value="6">6 ve üzeri</option>
+          <option value="7">7 ve üzeri</option>
+          <option value="8">8 ve üzeri</option>
+        </select>
+      </div>
+      <button onclick="startRandomSearch()" style="width:100%; padding:14px; background:#4285F4; color:#fff; border:none; border-radius:12px; font-weight:700; font-size:16px; cursor:pointer;">🎲 Rastgele Film Bul</button>
+      <div id="random-results" style="margin-top:20px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Hava Durumu Modalı -->
+<div class="modal-overlay" id="weather-modal-overlay">
+  <div class="modal-window" id="weather-modal-window">
+    <div class="modal-header"><div></div><button onclick="closeWeatherModal()">✕</button></div>
+    <div class="modal-body" id="weather-modal-body"></div>
+  </div>
+</div>
+<!-- İstatistikler Modalı -->
+<div class="modal-overlay" id="stats-modal-overlay">
+  <div class="modal-window" id="stats-modal-window">
+    <div class="modal-header"><h2 style="margin:0;font-size:18px;">📊 İstatistikler</h2><button onclick="closeStatsModal()">✕</button></div>
+    <div class="modal-body" id="stats-modal-body"></div>
+  </div>
+</div>
+
+<div id="image-viewer-overlay">
+  <button class="close-img" id="close-img">✕</button>
+  <img id="viewer-img" src="" alt="Resim" />
+</div>
+
+<div id="trailer-overlay">
+  <button class="close-trl" id="close-trl">✕</button>
+  <iframe id="trailer-iframe" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>
+</div>
+
+<script>
+  const API_KEY = '4914230c4aaf1ff8599a892b0dfc71f4';
+  // Gemini 2.5 Flash için URL'ye key eklenecek şekilde ayarlandı (401 sorunu için)
+  const GEMINI_KEY = 'AQ.Ab8RN6K_MldVcUhvc31hrMQMKD0S4nn0GCQMizk2Oo18_4xQsQ';
+  const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+  const IMG_URL = 'https://image.tmdb.org/t/p/w500';
+  
+  const HISTORY_KEY = 'chat_history_v2';
+  const FAV_KEY = 'film_favorites_v1';
+  const THEME_KEY = 'film_theme_v1';
+  const STATS_KEY = 'api_stats_v1';
+
+  const pageList = document.getElementById('page-list');
+  const searchInput = document.getElementById('search-input');
+  const searchBtn = document.getElementById('search-btn');
+  const tabs = document.querySelectorAll('.tab');
+  const chatToolbar = document.getElementById('chatToolbar');
+  const genreFilterContainer = document.getElementById('genre-filter-container');
+  const genreFilter = document.getElementById('genre-filter');
+
+  const detailOverlay = document.getElementById('detail-modal-overlay');
+  const detailBody = document.getElementById('detail-modal-body');
+  const detailWindow = document.getElementById('detail-modal-window');
+
+  const weatherOverlay = document.getElementById('weather-modal-overlay');
+  const weatherBody = document.getElementById('weather-modal-body');
+
+  const searchOverlay = document.getElementById('search-modal-overlay');
+  const searchResultsBox = document.getElementById('tmdb-search-results');
+  const tmdbSearchInput = document.getElementById('tmdb-search-input');
+
+  const randomOverlay = document.getElementById('random-modal-overlay');
+  const randomResults = document.getElementById('random-results');
+
+  const statsOverlay = document.getElementById('stats-modal-overlay');
+  const statsBody = document.getElementById('stats-modal-body');
+
+  const imageOverlay = document.getElementById('image-viewer-overlay');
+  const viewerImg = document.getElementById('viewer-img');
+
+  const trailerOverlay = document.getElementById('trailer-overlay');
+  const trailerIframe = document.getElementById('trailer-iframe');
+
+  let currentTab = 'home';
+  let tabPages = { now_playing: 1, top_rated: 1, popular: 1 };
+  let tabTotalPages = { now_playing: 1, top_rated: 1, popular: 1 };
+  let chatHistory = [];
+  let isSending = false;
+  
+  let actorMovies = [];
+  let actorMovieLimit = 5;
+
+  let currentSearchQuery = '';
+  let manualSearchResults = [];
+  let manualSearchPage = 1;
+  let manualSearchTotalPages = 1;
+
+  let isNetworkBusy = false;
+  let apiStats = JSON.parse(localStorage.getItem(STATS_KEY) || '{"tmdb":0,"gemini":0,"gemini_search":0,"last_reset":"' + new Date().toISOString().split('T')[0] + '"}');
+
+  // === MODAL GEÇMİŞİ (STACK) - SEKMELİ YAPI ===
+  let detailStack = [];
+  let _skipStackPush = false;
+
+  function setNetworkBusy(state) { isNetworkBusy = state; }
+  function trackApi(apiName) {
+    apiStats[apiName] = (apiStats[apiName] || 0) + 1;
+    localStorage.setItem(STATS_KEY, JSON.stringify(apiStats));
+  }
+
+  function applyTheme() {
+    const isDark = localStorage.getItem(THEME_KEY) === 'dark';
+    if (isDark) document.body.classList.add('dark-mode');
+    else document.body.classList.remove('dark-mode');
+  }
+  function toggleTheme() {
+    const isDark = document.body.classList.contains('dark-mode');
+    if (isDark) { document.body.classList.remove('dark-mode'); localStorage.setItem(THEME_KEY, 'light'); }
+    else { document.body.classList.add('dark-mode'); localStorage.setItem(THEME_KEY, 'dark'); }
+    renderHome();
+  }
+
+  function updateClock() {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const dateStr = now.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' });
+    const clockEl = document.getElementById('home-clock');
+    const dateEl = document.getElementById('home-date');
+    if (clockEl) clockEl.textContent = timeStr;
+    if (dateEl) dateEl.textContent = dateStr;
+  }
+  setInterval(updateClock, 1000);
+
+  let weatherDailyData = [];
+  let weatherCurrentData = null;
+  
+  function getWeatherIcon(code) {
+    if (code === 0 || code === 1) return '☀️'; if (code === 2 || code === 3) return '⛅'; if (code === 45 || code === 48) return '🌫️';
+    if (code >= 51 && code <= 55) return '🌦️'; if (code >= 61 && code <= 65) return '🌧️'; if (code >= 71 && code <= 75) return '❄️';
+    if (code >= 80 && code <= 82) return '⛈️'; if (code >= 95) return '🌩️'; return '🌈';
+  }
+
+  async function fetchWeather(city = 'Ankara') {
+    try {
+      const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=tr`);
+      const geoData = await geoRes.json();
+      if (!geoData.results || geoData.results.length === 0) return;
+      const lat = geoData.results[0].latitude;
+      const lon = geoData.results[0].longitude;
+      const sehirAdi = geoData.results[0].name;
+      const havaRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`);
+      const data = await havaRes.json();
+
+      weatherDailyData = data.daily.time.map((date, i) => ({ date: date, max: data.daily.temperature_2m_max[i], min: data.daily.temperature_2m_min[i], code: data.daily.weathercode[i] }));
+      weatherCurrentData = { temp: Math.round(data.current_weather.temperature), code: data.current_weather.weathercode, city: sehirAdi };
+
+      const hw = document.getElementById('home-weather-widget');
+      if (hw) hw.innerHTML = `<span class="icon">${getWeatherIcon(weatherCurrentData.code)}</span><span class="temp">${weatherCurrentData.temp}°</span><span class="city">${weatherCurrentData.city}</span>`;
+      if (weatherOverlay.classList.contains('active')) renderWeatherModal(sehirAdi);
+    } catch (e) {}
+  }
+
+  function renderWeatherModal(cityName) {
+    const current = weatherCurrentData || {};
+    weatherBody.innerHTML = `
+      <div class="weather-search-box">
+        <input type="text" id="weatherSearchInput" placeholder="Şehir ara" value="${cityName || 'Ankara'}">
+        <button onclick="searchWeather()">ARA</button>
+      </div>
+      <div class="weather-current">
+        <div class="wc-icon">${getWeatherIcon(current.code)}</div>
+        <div class="wc-temp">${current.temp != null ? current.temp + '°' : '--°'}</div>
+        <div class="wc-text">${current.city || cityName}</div>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:8px;">7 GÜNLÜK TAHMİN</div>
+      <div class="weather-forecast-grid" id="weatherForecastGrid"></div>
+    `;
+    const grid = document.getElementById('weatherForecastGrid');
+    weatherDailyData.forEach(day => {
+      const date = new Date(day.date + 'T00:00:00');
+      const dayName = date.toLocaleDateString('tr-TR', { weekday: 'short' });
+      const card = document.createElement('div'); card.className = 'weather-day-card';
+      card.innerHTML = `<div class="day-name">${dayName}</div><div class="day-icon">${getWeatherIcon(day.code)}</div><div class="day-temps"><span class="max">${Math.round(day.max)}°</span><span class="min">${Math.round(day.min)}°</span></div>`;
+      grid.appendChild(card);
+    });
+    const inp = document.getElementById('weatherSearchInput');
+    if (inp) inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') searchWeather(); });
+  }
+
+  function openWeatherModal() {
+    weatherOverlay.classList.add('active'); document.body.style.overflow = 'hidden';
+    if (weatherDailyData.length > 0) renderWeatherModal(weatherCurrentData?.city || 'Ankara');
+    else { weatherBody.innerHTML = '<div style="text-align:center;padding:20px;">Yükleniyor...</div>'; fetchWeather('Ankara'); }
+  }
+  function closeWeatherModal() { weatherOverlay.classList.remove('active'); document.body.style.overflow = ''; }
+  function searchWeather() { const city = document.getElementById('weatherSearchInput')?.value.trim(); if (city) fetchWeather(city); }
+
+  function openStatsModal() { statsOverlay.classList.add('active'); renderStatsModal(); }
+  function closeStatsModal() { statsOverlay.classList.remove('active'); }
+  function renderStatsModal() {
+    statsBody.innerHTML = `
+      <div class="stat-section">
+        <h4>Bugünkü İstatistikler</h4>
+        <div class="stat-row"><span>TMDB Kotası</span> <b>${apiStats.tmdb || 0} İstek</b></div>
+        <div class="stat-row"><span>Gemini Kotası</span> <b>${apiStats.gemini || 0} İstek</b></div>
+        <div class="stat-row"><span>Gemini Web Kotası</span> <b>${apiStats.gemini_search || 0} İstek</b></div>
+      </div>
+      <div class="stat-btns">
+        <button onclick="resetStats('daily')" style="background:#ff9800;color:#fff;">Günlük Sıfırla</button>
+        <button onclick="resetStats('all')" style="background:#e53935;color:#fff;">Tümünü Sıfırla</button>
+      </div>
+    `;
+  }
+  function resetStats() {
+    apiStats = { tmdb: 0, gemini: 0, gemini_search: 0, last_reset: new Date().toISOString().split('T')[0] };
+    localStorage.setItem(STATS_KEY, JSON.stringify(apiStats));
+    renderStatsModal();
+  }
+
+  function renderHome() {
+    const isDark = document.body.classList.contains('dark-mode');
+    pageList.innerHTML = `
+      <div class="home-screen">
+        <button class="theme-toggle" onclick="toggleTheme()" title="Tema Değiştir">${isDark ? '☀️' : '🌙'}</button>
+        <div class="home-clock" id="home-clock">--:--</div>
+        <div class="home-date" id="home-date">Yükleniyor...</div>
+        <div class="home-weather" id="home-weather-widget" onclick="openWeatherModal()">
+          <span class="icon">☀️</span><span class="temp">--°</span><span class="city">Ankara</span>
+        </div>
+        <div class="home-menu">
+          <button onclick="loadTab('now_playing')">🎬 Vizyondakiler</button>
+          <button onclick="loadTab('top_rated')">🏆 IMDb En Yüksek</button>
+          <button onclick="loadTab('popular')">🔥 Popüler</button>
+          <button onclick="loadTab('favorites')">⭐ Favoriler</button>
+          <button onclick="openRandomModal()" style="background: #e8f0fe; color: #1a73e8;">🎲 Rastgele Film Bul</button>
+          <button onclick="openManualSearchModal()">🔍 Film / Oyuncu Bul</button>
+          <button onclick="openStatsModal()" style="background: #f0f4c3; color: #827717;">📊 İstatistikler</button>
+        </div>
+      </div>
+    `;
+    updateClock();
+    fetchWeather();
+  }
+
+  // === RASTGELE FİLM BULMA ===
+  function openRandomModal() {
+    randomOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    randomResults.innerHTML = '';
+  }
+  function closeRandomModal() {
+    randomOverlay.classList.remove('active');
+    if (!detailOverlay.classList.contains('active') && !searchOverlay.classList.contains('active')) document.body.style.overflow = '';
+  }
+
+  async function startRandomSearch() {
+    const genre = document.getElementById('random-genre').value;
+    const rating = document.getElementById('random-rating').value;
+    
+    randomResults.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Aranıyor...</div>';
+    
+    let url = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=tr-TR&page=1&sort_by=popularity.desc`;
+    if (genre) url += `&with_genres=${genre}`;
+    if (rating) url += `&vote_average.gte=${rating}`;
+    
+    try {
+      setNetworkBusy(true);
+      trackApi('tmdb');
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      if (data.results && data.results.length > 0) {
+        // Rastgele 5 film seçelim
+        const shuffled = data.results.sort(() => 0.5 - Math.random());
+        const randomMovies = shuffled.slice(0, 5);
+        
+        let html = '';
+        randomMovies.forEach(m => {
+          const poster = m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No';
+          html += `<div class="list-card" onclick="openDetail(${m.id}, 'movie')">
+            <img src="${poster}" />
+            <div class="info">
+              <div class="title">${escapeHtml(m.title)}</div>
+              <div class="meta">${m.release_date ? m.release_date.slice(0,4) : ''} · ⭐ ${m.vote_average ? m.vote_average.toFixed(1) : '-'}</div>
+            </div>
+          </div>`;
+        });
+        randomResults.innerHTML = html;
+      } else {
+        randomResults.innerHTML = '<div class="empty-msg">Kriterlere uygun film bulunamadı.</div>';
+      }
+    } catch(e) {
+      randomResults.innerHTML = '<div class="empty-msg" style="color:red;">Hata oluştu.</div>';
+    } finally {
+      setNetworkBusy(false);
+    }
+  }
+
+  // === ARAMA MODALI ===
+  function openManualSearchModal() {
+    searchOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    tmdbSearchInput.value = '';
+    searchResultsBox.innerHTML = '';
+    searchOverlay.style.zIndex = 4000;
+  }
+  function closeSearchModal() {
+    searchOverlay.classList.remove('active');
+    if (!detailOverlay.classList.contains('active')) document.body.style.overflow = '';
+  }
+
+  async function performTMDBManualSearch(append = false) {
+    const q = tmdbSearchInput.value.trim();
+    if (!q) return;
+    if (!append) { currentSearchQuery = q; manualSearchPage = 1; manualSearchResults = []; searchResultsBox.innerHTML = '<div style="text-align:center;padding:20px;">Aranıyor...</div>'; }
+
+    try {
+      setNetworkBusy(true);
+      trackApi('tmdb'); trackApi('tmdb');
+      const [movieRes, personRes] = await Promise.all([
+        fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(q)}&language=tr-TR&page=${manualSearchPage}`),
+        fetch(`https://api.themoviedb.org/3/search/person?api_key=${API_KEY}&query=${encodeURIComponent(q)}&language=tr-TR&page=1`)
+      ]);
+      const movieData = await movieRes.json();
+      const personData = await personRes.json();
+
+      manualSearchTotalPages = movieData.total_pages || 1;
+      let items = [];
+      const exactPerson = personData.results?.find(p => p.name.toLowerCase() === q.toLowerCase());
+      if (exactPerson && manualSearchPage === 1) items.push({ type: 'person', data: exactPerson });
+      (movieData.results || []).forEach(m => items.push({ type: 'movie', data: m }));
+      if (manualSearchPage === 1) {
+        (personData.results || []).slice(0, 2).forEach(p => {
+          if (!exactPerson || p.id !== exactPerson.id) items.push({ type: 'person', data: p });
+        });
+      }
+
+      if (!append) manualSearchResults = items;
+      else manualSearchResults = manualSearchResults.concat(items);
+      renderManualSearchResults();
+    } catch(e) { searchResultsBox.innerHTML = '<div style="text-align:center;color:red;padding:20px;">Arama hatası.</div>'; }
+    finally { setNetworkBusy(false); }
+  }
+
+  function renderManualSearchResults() {
+    if (manualSearchResults.length === 0) { searchResultsBox.innerHTML = '<div class="empty-msg">Sonuç bulunamadı.</div>'; return; }
+
+    let html = '';
+    manualSearchResults.forEach(item => {
+      if (item.type === 'movie') {
+        const m = item.data;
+        const poster = m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No';
+        html += `<div class="list-card" onclick="openDetail(${m.id}, 'movie')">
+          <img src="${poster}" />
+          <div class="info"><div class="title">${escapeHtml(m.title)}</div><div class="meta">Film · ${m.release_date ? m.release_date.slice(0,4) : ''} · ⭐ ${m.vote_average ? m.vote_average.toFixed(1) : '-'}</div></div>
+        </div>`;
+      } else {
+        const p = item.data;
+        const img = p.profile_path ? IMG_URL + p.profile_path : 'https://via.placeholder.com/100x150?text=No';
+        html += `<div class="list-card" onclick="openDetail(${p.id}, 'actor')">
+          <img src="${img}" />
+          <div class="info"><div class="title">${escapeHtml(p.name)}</div><div class="meta">Oyuncu · ${escapeHtml(p.known_for_department || 'Oyunculuk')}</div></div>
+        </div>`;
+      }
+    });
+
+    if (manualSearchPage < manualSearchTotalPages && manualSearchTotalPages > 1) {
+      html += `<button class="load-more-btn" onclick="manualSearchPage++; performTMDBManualSearch(true)">Devamını Göster</button>`;
+    }
+    searchResultsBox.innerHTML = html;
+  }
+
+  function loadHistory() { try { const raw = localStorage.getItem(HISTORY_KEY); if (raw) chatHistory = JSON.parse(raw); } catch { chatHistory = []; } }
+  function saveHistory() { try { localStorage.setItem(HISTORY_KEY, JSON.stringify(chatHistory)); } catch {} }
+  function clearChat() { if (!confirm('Sohbet geçmişini silmek istiyor musun?')) return; chatHistory = []; saveHistory(); renderChat(); }
+
+  function escapeHtml(str) { return String(str).replace(/[&<>"]/g, s => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[s])); }
+
+  function formatAIResponse(text) {
+    let t = String(text).replace(/【[^】]*】/g, '').replace(/\[\d+†[^\]]*\]/g, '').replace(/\[\d+\]/g, '').replace(/\[TMDB:[^\]]*\]/gi, '');
+    t = escapeHtml(t);
+    const codeBlocks = [];
+    t = t.replace(/```([\s\S]*?)```/g, (m, code) => { codeBlocks.push(code); return `@@CODE_${codeBlocks.length - 1}@@`; });
+    t = t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
+    const lines = t.split('\n');
+    const out = [];
+    for (let raw of lines) {
+      let line = raw.trim();
+      if (!line) { out.push(''); continue; }
+      let headingMatch = line.match(/^#{1,6}\s+(.+)$/) || line.match(/^\*\*(.+?)\*\*\s*[:：]?\s*$/);
+      if (headingMatch) { out.push('<SECTION>' + headingMatch[1].replace(/\*\*/g, '').replace(/[:：]\s*$/, '').trim()); continue; }
+      let bulletMatch = line.match(/^[\-\*•]\s+(.+)$/);
+      if (bulletMatch) { out.push('<BULLET>' + bulletMatch[1].replace(/\*\*/g, '').trim()); continue; }
+      out.push('<PARA>' + line.replace(/\*\*/g, ''));
+    }
+    let html = '';
+    for (let l of out) {
+      if (l === '') { html += '<div style="height:8px;"></div>'; continue; }
+      if (l.startsWith('<SECTION>')) html += `<span class="ai-section">${l.substring(9)}</span>`;
+      else if (l.startsWith('<BULLET>')) html += `<span class="ai-bullet">🔹 ${l.substring(8)}</span>`;
+      else if (l.startsWith('<PARA>')) html += `<span class="ai-para">${l.substring(6)}</span>`;
+      else html += `<span class="ai-para">${l}</span>`;
+    }
+    html = html.replace(/@@CODE_(\d+)@@/g, (m, i) => `<pre>${escapeHtml(codeBlocks[i])}</pre>`);
+    return html;
+  }
+
+  function renderChat() {
+    pageList.innerHTML = '';
+    if (currentTab === 'chat' && chatHistory.length > 0) {
+      chatToolbar.classList.add('show');
+    } else {
+      chatToolbar.classList.remove('show');
+    }
+
+    if (chatHistory.length === 0) {
+      pageList.innerHTML = '<div class="empty-msg">Merhaba! Film sorabilir ya da normal sohbet edebilirsin.</div>';
+      return;
+    }
+    chatHistory.forEach((msg) => {
+      const div = document.createElement('div');
+      div.className = 'chat-message ' + (msg.role === 'user' ? 'user' : 'ai');
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      if (msg.role === 'ai') {
+        if (msg.pending) bubble.innerHTML = '<div class="ai-label">AI</div><div class="typing-dots"><span></span><span></span><span></span></div>';
+        else bubble.innerHTML = '<div class="ai-label">AI</div><div class="ai-content">' + formatAIResponse(msg.content) + '</div>';
+      } else { bubble.textContent = msg.content; }
+      div.appendChild(bubble);
+      if (msg.role === 'ai' && msg.cards && msg.cards.length > 0) {
+        const cardsWrap = document.createElement('div'); cardsWrap.className = 'chat-cards';
+        msg.cards.forEach(card => {
+          const el = document.createElement('div'); el.className = 'chat-card';
+          el.innerHTML = `<img src="${card.poster}" /><div class="card-title">${escapeHtml(card.title)}</div><div class="card-meta">⭐ ${card.rating} · ${card.year}</div>`;
+          el.addEventListener('click', () => openDetail(card.id, 'movie'));
+          cardsWrap.appendChild(el);
+        });
+        bubble.appendChild(cardsWrap);
+      }
+      if (msg.role === 'ai' && msg.cast && msg.cast.length > 0) {
+        const castWrap = document.createElement('div'); castWrap.className = 'chat-cards';
+        msg.cast.forEach(actor => {
+          const el = document.createElement('div'); el.className = 'chat-card';
+          el.innerHTML = `<img src="${actor.poster}" /><div class="card-title">${escapeHtml(actor.name)}</div><div class="card-meta" style="font-size:9px;">${escapeHtml(actor.character)}</div>`;
+          el.addEventListener('click', () => openDetail(actor.id, 'actor'));
+          castWrap.appendChild(el);
+        });
+        bubble.appendChild(castWrap);
+      }
+      div.appendChild(bubble);
+      pageList.appendChild(div);
+    });
+    window.scrollTo(0, document.body.scrollHeight);
+  }
+
+  async function enqueueGeminiFetch(url, options) {
+    let attempts = 0;
+    while (isNetworkBusy && attempts < 10) {
+      await new Promise(r => setTimeout(r, 500));
+      attempts++;
+    }
+    return fetch(url, options);
+  }
+
+  async function handleSend(text) {
+    if (!text.trim() || isSending) return;
+    isSending = true;
+    if (currentTab !== 'chat') loadTab('chat');
+
+    chatHistory.push({ role: 'user', content: text.trim() });
+    const aiMsg = { role: 'ai', content: '', pending: true, cards: [], cast: [] };
+    chatHistory.push(aiMsg);
+    saveHistory();
+    renderChat();
+
+    const lowerText = text.toLowerCase();
+    const searchKeywords = ['hava', 'dolar', 'euro', 'altın', 'kur', 'güncel', 'son dakika', 'bugün', 'şu an', 'kaç tl', 'fiyat'];
+    const needsSearch = searchKeywords.some(kw => lowerText.includes(kw));
+
+    let aiText = '';
+    try {
+      const requestBody = {
+        contents: [{ parts: [{ text: text.trim() }] }],
+        systemInstruction: { parts: [{ text: `Sen yardımcı bir asistansın. Film, dizi veya oyuncu hakkında soru sorulursa kısa ve net cevap ver. Cevabın EN SONUNA [TMDB: Film Adı | info], [TMDB: Film Adı | cast] veya [TMDB: Oyuncu Adı | person] etiketi ekle. Normal sohbette etiket ekleme.` }] },
+        generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+      };
+
+      if (needsSearch) { requestBody.tools = [{ google_search: {} }]; trackApi('gemini_search'); }
+
+      trackApi('gemini');
+
+      const res = await enqueueGeminiFetch(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!res.ok) aiText = 'Üzgünüm, cevap alınamadı. (' + res.status + ')';
+      else {
+        const data = await res.json();
+        aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Cevap alınamadı.';
+      }
+    } catch (e) { aiText = 'Bağlantı hatası.'; }
+
+    const tmdbResult = await parseTMDBIntent(aiText, text);
+    const last = chatHistory[chatHistory.length - 1];
+    last.content = aiText;
+    last.cards = tmdbResult.cards;
+    last.cast = tmdbResult.cast;
+    last.pending = false;
+    saveHistory();
+    renderChat();
+    isSending = false;
+  }
+
+  async function parseTMDBIntent(aiText, userText) {
+    let cards = [], cast = [];
+    const tagMatch = aiText.match(/\[TMDB:\s*(.*?)\s*\|\s*(info|cast|person)\s*\]/i);
+    if (tagMatch) {
+      const query = tagMatch[1].trim();
+      const type = tagMatch[2].toLowerCase();
+      try {
+        trackApi('tmdb');
+        if (type === 'person') {
+          const res = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR`);
+          const data = await res.json();
+          const person = data.results?.[0];
+          if (person) cast.push({ id: person.id, name: person.name, character: 'Oyuncu', poster: person.profile_path ? IMG_URL + person.profile_path : 'https://via.placeholder.com/110x150?text=No' });
+        } else {
+          const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=tr-TR`);
+          const data = await res.json();
+          const movie = data.results?.[0];
+          if (movie) {
+            cards.push({ id: movie.id, title: movie.title, year: movie.release_date?.slice(0,4), rating: movie.vote_average?.toFixed(1), poster: movie.poster_path ? IMG_URL + movie.poster_path : 'https://via.placeholder.com/110x150?text=No' });
+            if (type === 'cast') {
+              trackApi('tmdb');
+              const castRes = await fetch(`https://api.themoviedb.org/3/movie/${movie.id}/credits?api_key=${API_KEY}&language=tr-TR`);
+              const castData = await castRes.json();
+              cast = (castData.cast || []).slice(0, 8).map(a => ({ id: a.id, name: a.name, character: a.character, poster: a.profile_path ? IMG_URL + a.profile_path : 'https://via.placeholder.com/110x150?text=No' }));
+            }
+          }
+        }
+      } catch (err) {}
+    }
+    return { cards, cast };
+  }
+
+  async function loadTab(tab, page = 1, append = false) {
+    currentTab = tab;
+    tabs.forEach(t => t.classList.remove('active'));
+    const activeTabBtn = document.querySelector(`.tab[data-tab="${tab}"]`);
+    if (activeTabBtn) activeTabBtn.classList.add('active');
+
+    if (tab === 'home') { chatToolbar.classList.remove('show'); genreFilterContainer.style.display = 'none'; renderHome(); return; }
+    if (tab === 'chat') { renderChat(); genreFilterContainer.style.display = 'none'; return; }
+    if (tab === 'favorites') { chatToolbar.classList.remove('show'); genreFilterContainer.style.display = 'none'; renderFavorites(); return; }
+
+    genreFilterContainer.style.display = 'block';
+    chatToolbar.classList.remove('show');
+    if (!append) { pageList.innerHTML = '<div style="text-align:center;padding:20px;">Yükleniyor...</div>'; tabPages[tab] = 1; }
+    
+    const selectedGenre = genreFilter.value;
+    let url = '';
+    if (selectedGenre) {
+      url = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=tr-TR&page=${page}&with_genres=${selectedGenre}`;
+      if (tab === 'top_rated') url += `&sort_by=vote_average.desc`;
+      else if (tab === 'popular' || tab === 'now_playing') url += `&sort_by=popularity.desc`;
+    } else {
+      url = `https://api.themoviedb.org/3/movie/${tab}?api_key=${API_KEY}&language=tr-TR&page=${page}`;
+    }
+
+    try {
+      setNetworkBusy(true);
+      trackApi('tmdb');
+      const res = await fetch(url);
+      const data = await res.json();
+      tabTotalPages[tab] = data.total_pages || 1;
+      if (append) { data.results.forEach(item => { pageList.appendChild(createListCard(item)); }); updateLoadMore(tab); }
+      else { renderList(data.results || [], false); }
+    } catch { if (!append) pageList.innerHTML = '<div class="empty-msg">Filmler yüklenemedi.</div>'; }
+    finally { setNetworkBusy(false); }
+  }
+
+  function renderFavorites() {
+    const favs = JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
+    pageList.innerHTML = '';
+    if (favs.length === 0) {
+      pageList.innerHTML = '<div class="empty-msg">Henüz favori film eklemedin.<br>Film detayından "☆ Favorilere Ekle" butonunu kullan.</div>';
+      return;
+    }
+    favs.forEach(m => {
+      const poster = m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/200x300?text=No';
+      const card = document.createElement('div'); card.className = 'list-card';
+      card.innerHTML = `<img src="${poster}" /><div class="info"><div class="title">${escapeHtml(m.title)}</div><div class="meta"><span class="imdb">⭐ ${m.vote_average?.toFixed(1) || '-'}</span> ${m.release_date?.slice(0,4) || ''}</div><div class="overview">${escapeHtml(m.overview || 'Açıklama yok.')}</div></div>`;
+      card.addEventListener('click', () => openDetail(m.id, 'movie'));
+      pageList.appendChild(card);
+    });
+  }
+
+  function updateLoadMore(tab) {
+    const oldBtn = document.querySelector('.load-more-btn');
+    if (oldBtn) oldBtn.remove();
+    if (tabPages[tab] < tabTotalPages[tab] && tabTotalPages[tab] > 1) {
+      const btn = document.createElement('button'); btn.className = 'load-more-btn'; btn.textContent = 'Devamını Göster';
+      btn.addEventListener('click', () => { tabPages[tab]++; loadTab(tab, tabPages[tab], true); });
+      pageList.appendChild(btn);
+    }
+  }
+
+  function renderList(items, fromSearch) {
+    pageList.innerHTML = '';
+    if (!items || items.length === 0) { pageList.innerHTML = '<div class="empty-msg">Sonuç bulunamadı.</div>'; return; }
+    items.forEach(item => { pageList.appendChild(createListCard(item)); });
+    if (!fromSearch) updateLoadMore(currentTab);
+  }
+
+  function createListCard(item) {
+    const card = document.createElement('div'); card.className = 'list-card';
+    const poster = item.poster_path ? IMG_URL + item.poster_path : 'https://via.placeholder.com/200x300?text=No';
+    const title = item.title || item.original_title || item.name || 'Bilinmiyor';
+    const year = item.release_date ? item.release_date.slice(0,4) : '';
+    const imdb = item.vote_average ? item.vote_average.toFixed(1) : '-';
+    const overview = item.overview || 'Açıklama yok.';
+    card.innerHTML = `<img src="${poster}" /><div class="info"><div class="title">${escapeHtml(title)}</div><div class="meta"><span class="imdb">⭐ ${imdb}</span> ${year}</div><div class="overview">${escapeHtml(overview)}</div></div>`;
+    card.addEventListener('click', () => openDetail(item.id, 'movie'));
+    return card;
+  }
+
+  // === YENİ NESİL KATMAN YÖNETİMİ (STACK) ===
+  // Sayfayı yeniden yüklemeden, mevcut HTML ve scroll'u saklayarak geri dönüş sağlar.
+  
+  function closeDetailModal() {
+    if (detailStack.length > 0) {
+      const prev = detailStack.pop();
+      detailOverlay.classList.remove('active');
+      
+      // Önceki durumu geri yükle (HTML ve Scroll)
+      detailBody.innerHTML = prev.html;
+      detailOverlay.classList.add('active');
+      
+      // Global değişkenleri geri yükle
+      if (prev.state) {
+        if (prev.state.actorMovies) actorMovies = prev.state.actorMovies;
+        if (prev.state.actorMovieLimit) actorMovieLimit = prev.state.actorMovieLimit;
+        if (prev.state.currentMovieData) window._currentMovieData = prev.state.currentMovieData;
+      }
+
+      // Scroll pozisyonunu geri yükle
+      setTimeout(() => {
+        detailWindow.scrollTop = prev.scrollTop;
+      }, 10);
+      
+      return;
+    }
+    
+    // Stack boşsa kapat
+    detailOverlay.classList.remove('active');
+    if (!searchOverlay.classList.contains('active') && !imageOverlay.classList.contains('active') && !trailerOverlay.classList.contains('active') && !randomOverlay.classList.contains('active')) {
+      document.body.style.overflow = '';
+    }
+  }
+
+  async function openDetail(id, type = 'movie') {
+    // Eğer zaten açık bir detay varsa, mevcut durumu stack'e kaydet
+    if (detailOverlay.classList.contains('active')) {
+      detailStack.push({
+        html: detailBody.innerHTML,
+        scrollTop: detailWindow.scrollTop,
+        state: {
+          actorMovies: actorMovies,
+          actorMovieLimit: actorMovieLimit,
+          currentMovieData: window._currentMovieData
+        }
+      });
+    }
+
+    // Yeni detay yükleniyor...
+    detailBody.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Yükleniyor...</div>';
+    detailOverlay.classList.add('active');
+    detailOverlay.style.zIndex = 4500;
+    document.body.style.overflow = 'hidden';
+
+    try {
+      setNetworkBusy(true);
+      if (type === 'movie') {
+        trackApi('tmdb');
+        const res = await fetch(`https://api.themoviedb.org/3/movie/${id}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits,videos`);
+        const movie = await res.json();
+        const poster = movie.poster_path ? IMG_URL + movie.poster_path : 'https://via.placeholder.com/500x750?text=No+Image';
+        const trailer = movie.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+        
+        let overview = movie.overview;
+        let showAiBtn = false;
+        if (!overview || overview.trim() === '') {
+          overview = "Konu bilgisi TMDB'de bulunmuyor.";
+          showAiBtn = true;
+        }
+
+        const favs = JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
+        const isFav = favs.some(f => f.id === movie.id);
+
+        let html = `
+          <div class="modal-poster-wrap"><img src="${poster}" id="d-poster" /></div>
+          <div class="modal-actions">
+            <button class="fav-btn ${isFav ? 'saved' : ''}" onclick="toggleFavorite(${movie.id}, this)">${isFav ? '★ Favorilerden Çıkar' : '☆ Favorilere Ekle'}</button>
+            <button class="google-btn" onclick="window.open('https://www.google.com/search?q=${encodeURIComponent(movie.title + ' full izle')}','_blank')">Filmi İzle</button>
+            ${trailer ? `<button class="trailer-btn" onclick="openTrailer('${trailer.key}')">Fragmanı İzle</button>` : ''}
+          </div>
+          <div class="modal-title">${escapeHtml(movie.title)}</div>
+          <div class="modal-original">${escapeHtml(movie.original_title || '')}</div>
+          <div class="modal-meta">
+            <span>${movie.release_date ? movie.release_date.slice(0,4) : ''}</span> · 
+            <span>${movie.genres ? movie.genres.map(g => g.name).join(', ') : ''}</span>
+            ${movie.vote_average ? `<span class="rating">⭐ ${movie.vote_average.toFixed(1)}</span>` : ''}
+          </div>
+          <div class="modal-overview" id="movie-overview-box">
+            ${escapeHtml(overview)}
+            <div class="source-badge">${showAiBtn ? '' : 'Kaynak: TMDB'}</div>
+            ${showAiBtn ? `<button class="ai-fetch-btn" onclick="fetchMovieOverviewWithAI(${movie.id}, '${escapeHtml(movie.title)}')">✨ Gemini ile Bul</button>` : ''}
+          </div>
+          <div class="modal-section-title">Oyuncular</div>
+          <div class="actor-scroll">
+        `;
+        const cast = movie.credits?.cast || [];
+        cast.slice(0, 12).forEach(actor => {
+          const img = actor.profile_path ? IMG_URL + actor.profile_path : 'https://via.placeholder.com/100x120?text=No';
+          html += `<div class="actor-card" onclick="openDetail(${actor.id}, 'actor')"><img src="${img}" /><div class="name">${escapeHtml(actor.name)}</div><div class="char">${escapeHtml(actor.character || '')}</div></div>`;
+        });
+        html += `</div>`;
+        detailBody.innerHTML = html;
+        document.getElementById('d-poster').addEventListener('click', () => openImageViewer(poster));
+
+        window._currentMovieData = movie;
+
+      } else {
+        trackApi('tmdb');
+        const res = await fetch(`https://api.themoviedb.org/3/person/${id}?api_key=${API_KEY}&language=tr-TR&append_to_response=credits`);
+        const person = await res.json();
+        const img = person.profile_path ? IMG_URL + person.profile_path : 'https://via.placeholder.com/100x140?text=No';
+        
+        let ageStr = '';
+        if (person.birthday) {
+          const age = Math.abs(new Date(Date.now() - new Date(person.birthday).getTime()).getUTCFullYear() - 1970);
+          ageStr = ` (${age} yaşında)`;
+        }
+        
+        let bio = person.biography;
+        let showAiBtn = false;
+        if (!bio || bio.trim() === '') {
+          bio = "Biyografi bilgisi TMDB'de bulunmuyor.";
+          showAiBtn = true;
+        }
+
+        actorMovies = person.credits?.cast || [];
+        actorMovies.sort((a,b) => new Date(b.release_date || 0) - new Date(a.release_date || 0));
+        actorMovieLimit = 5;
+
+        let html = `
+          <div class="actor-detail-header">
+            <img src="${img}" id="actor-poster" />
+            <div class="bio">
+              <h2>${escapeHtml(person.name)}</h2>
+              <div class="actor-info-list">
+                ${person.birthday ? `<div><b>Doğum Tarihi:</b> ${new Date(person.birthday).toLocaleDateString('tr-TR')}${ageStr}</div>` : ''}
+                ${person.place_of_birth ? `<div><b>Doğum Yeri:</b> ${escapeHtml(person.place_of_birth)}</div>` : ''}
+              </div>
+            </div>
+          </div>
+          <div class="modal-section-title">Hakkında</div>
+          <div class="modal-overview" id="actor-bio-box" style="font-size:14px; margin-bottom:20px;">
+            ${escapeHtml(bio)}
+            <div class="source-badge">${showAiBtn ? '' : 'Kaynak: TMDB'}</div>
+            ${showAiBtn ? `<button class="ai-fetch-btn" onclick="fetchActorBioWithAI(${person.id}, '${escapeHtml(person.name)}')">✨ Gemini ile Bul</button>` : ''}
+          </div>
+          <div class="modal-section-title">Filmleri</div>
+          <div id="actor-movies-list"></div>
+        `;
+        detailBody.innerHTML = html;
+        document.getElementById('actor-poster').addEventListener('click', () => openImageViewer(img));
+        renderActorMovies();
+      }
+      detailWindow.scrollTop = 0;
+    } catch {
+      detailBody.innerHTML = '<div class="empty-msg">Hata oluştu.</div>';
+    } finally {
+      setNetworkBusy(false);
+    }
+  }
+
+  window.toggleFavorite = function(id, btn) {
+    let favs = JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
+    const idx = favs.findIndex(f => f.id === id);
+    if (idx > -1) {
+      favs.splice(idx, 1);
+      btn.classList.remove('saved');
+      btn.textContent = '☆ Favorilere Ekle';
+    } else {
+      if (window._currentMovieData) {
+        favs.push(window._currentMovieData);
+        btn.classList.add('saved');
+        btn.textContent = '★ Favorilerden Çıkar';
+      }
+    }
+    localStorage.setItem(FAV_KEY, JSON.stringify(favs));
+  };
+
+  async function callGeminiAndTranslate(query, boxId, btn) {
+    const box = document.getElementById(boxId);
+    if (btn) { btn.textContent = 'Aranıyor...'; btn.disabled = true; }
+    
+    try {
+      setNetworkBusy(true);
+      trackApi('gemini_search');
+
+      const geminiRes = await enqueueGeminiFetch(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: query }] }],
+          tools: [{ google_search: {} }],
+          generationConfig: { temperature: 0.5, maxOutputTokens: 600 }
+        })
+      });
+      
+      if (geminiRes.ok) {
+        const gData = await geminiRes.json();
+        const text = gData.candidates?.[0]?.content?.parts?.[0]?.text || 'Sonuç bulunamadı.';
+        box.innerHTML = `${escapeHtml(text)}<div class="source-badge">Kaynak: Gemini Web Search</div>`;
+      } else {
+        throw new Error('Gemini API hatası');
+      }
+    } catch(e) {
+      if (btn) { btn.textContent = 'Hata oluştu, tekrar dene'; btn.disabled = false; }
+      box.innerHTML += '<div style="color:red; font-size:12px; margin-top:4px;">Bilgi alınamadı.</div>';
+    } finally { setNetworkBusy(false); }
+  }
+
+  window.fetchMovieOverviewWithAI = function(id, title) {
+    callGeminiAndTranslate(`${title} filminin konusu nedir? Özetle.`, 'movie-overview-box', document.querySelector('#movie-overview-box .ai-fetch-btn'));
+  };
+  window.fetchActorBioWithAI = function(id, name) {
+    callGeminiAndTranslate(`${name} kimdir? Biyografisini özetle.`, 'actor-bio-box', document.querySelector('#actor-bio-box .ai-fetch-btn'));
+  };
+
+  function renderActorMovies() {
+    const container = document.getElementById('actor-movies-list');
+    if (!container) return;
+    let html = '';
+    const limit = Math.min(actorMovieLimit, actorMovies.length);
+    for (let i = 0; i < limit; i++) {
+      const m = actorMovies[i];
+      const poster = m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No';
+      html += `
+        <div class="list-card" onclick="openDetail(${m.id}, 'movie')">
+          <img src="${poster}" />
+          <div class="info">
+            <div class="title" style="color:var(--text);">${escapeHtml(m.title || m.name)}</div>
+            <div class="meta">${m.release_date ? m.release_date.slice(0,4) : ''} · ⭐ ${m.vote_average ? m.vote_average.toFixed(1) : '-'}</div>
+          </div>
+        </div>
+      `;
+    }
+    if (actorMovieLimit < actorMovies.length) {
+      html += `<button class="load-more-btn" onclick="loadMoreActorMovies()">Devamını Göster (${actorMovies.length - actorMovieLimit} film daha)</button>`;
+    }
+    container.innerHTML = html;
+  }
+
+  function loadMoreActorMovies() { actorMovieLimit += 5; renderActorMovies(); }
+
+  function openImageViewer(src) { viewerImg.src = src; imageOverlay.classList.add('active'); }
+  function closeImageViewer() { imageOverlay.classList.remove('active'); viewerImg.src = ''; }
+  document.getElementById('close-img').addEventListener('click', closeImageViewer);
+  imageOverlay.addEventListener('click', (e) => { if (e.target === imageOverlay) closeImageViewer(); });
+
+  function openTrailer(key) { trailerIframe.src = `https://www.youtube.com/embed/${key}?autoplay=1`; trailerOverlay.classList.add('active'); }
+  function closeTrailer() { trailerOverlay.classList.remove('active'); trailerIframe.src = ''; }
+  document.getElementById('close-trl').addEventListener('click', closeTrailer);
+  trailerOverlay.addEventListener('click', (e) => { if (e.target === trailerOverlay) closeTrailer(); });
+
+  tabs.forEach(tab => { tab.addEventListener('click', () => loadTab(tab.dataset.tab)); });
+  searchBtn.addEventListener('click', () => { const text = searchInput.value.trim(); if (text) { handleSend(text); searchInput.value = ''; } });
+  searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { const text = searchInput.value.trim(); if (text) { handleSend(text); searchInput.value = ''; } } });
+  tmdbSearchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') performTMDBManualSearch(); });
+
+  applyTheme();
+  loadHistory();
+  loadTab('home');
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
