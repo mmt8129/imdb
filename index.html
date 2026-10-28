@@ -323,8 +323,8 @@
 <script>
   const API_KEY = '4914230c4aaf1ff8599a892b0dfc71f4';
   // Gemini 2.5 Flash için URL'ye key eklenecek şekilde ayarlandı (401 sorunu için)
-  const GEMINI_KEY = 'AQ.Ab8RN6K_MldVcUhvc31hrMQMKD0S4nn0GCQMizk2Oo18_4xQsQ';
-  const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+   // Cloudflare Worker Proxy Adresi
+  const GEMINI_PROXY_URL = 'https://imdb-gemini.06mmt8129.workers.dev';
   const IMG_URL = 'https://image.tmdb.org/t/p/w500';
   
   const HISTORY_KEY = 'chat_history_v2';
@@ -759,7 +759,7 @@
     const searchKeywords = ['hava', 'dolar', 'euro', 'altın', 'kur', 'güncel', 'son dakika', 'bugün', 'şu an', 'kaç tl', 'fiyat'];
     const needsSearch = searchKeywords.some(kw => lowerText.includes(kw));
 
-    let aiText = '';
+        let aiText = '';
     try {
       const requestBody = {
         contents: [{ parts: [{ text: text.trim() }] }],
@@ -771,7 +771,8 @@
 
       trackApi('gemini');
 
-      const res = await enqueueGeminiFetch(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
+      // DEĞİŞEN KISIM: GEMINI_PROXY_URL kullanıldı, headers'tan key silindi
+      const res = await enqueueGeminiFetch(GEMINI_PROXY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)
@@ -1090,11 +1091,12 @@
     const box = document.getElementById(boxId);
     if (btn) { btn.textContent = 'Aranıyor...'; btn.disabled = true; }
     
-    try {
+        try {
       setNetworkBusy(true);
       trackApi('gemini_search');
 
-      const geminiRes = await enqueueGeminiFetch(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
+      // DEĞİŞEN KISIM: GEMINI_PROXY_URL kullanıldı, headers'tan key silindi
+      const geminiRes = await enqueueGeminiFetch(GEMINI_PROXY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1115,7 +1117,6 @@
       if (btn) { btn.textContent = 'Hata oluştu, tekrar dene'; btn.disabled = false; }
       box.innerHTML += '<div style="color:red; font-size:12px; margin-top:4px;">Bilgi alınamadı.</div>';
     } finally { setNetworkBusy(false); }
-  }
 
   window.fetchMovieOverviewWithAI = function(id, title) {
     callGeminiAndTranslate(`${title} filminin konusu nedir? Özetle.`, 'movie-overview-box', document.querySelector('#movie-overview-box .ai-fetch-btn'));
