@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=yes, interactive-widget=resizes-content" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, interactive-widget=resizes-content" />
   <title>Film App</title>
   <link rel="manifest" href="./manifest.json" />
   <meta name="theme-color" content="#000000" />
@@ -108,6 +108,47 @@
 
     .overlay-center { align-items: center; justify-content: center; }
     .modal-window { background: var(--card); border-radius: 20px; width: 92%; max-width: 500px; padding: 20px; max-height: 80vh; overflow-y: auto; }
+  
+  /* --- PERFORMANS VE EKRAN SIFIRLAMA --- */
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden; /* Yatay kaymayı engeller */
+  -webkit-overflow-scrolling: touch; /* iOS için yumuşak kaydırma */
+}
+body {
+  padding-bottom: calc(150px + env(safe-area-inset-bottom));
+}
+
+/* Alt bar ve input kasmasını önlemek için blur efektini kaldırdık */
+.bottom-nav, #chat-input-container {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: #000000 !important;
+  border-top: 1px solid #262626 !important;
+}
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+}
+
+/* Büyük gölgeleri ve ağır efektleri kaldırarak kaydırmayı rahatlat */
+.movie-card, .list-card {
+  box-shadow: none !important; 
+  border: 1px solid var(--border) !important;
+}
+.modal-overlay {
+  transform: translate3d(0,0,0); /* Donanım hızlandırma */
+  will-change: transform;
+}
+
+.grid-container {
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+/* Başlıkları daralt */
+header { font-size: 20px; }
+  
   </style>
 </head>
 <body>
