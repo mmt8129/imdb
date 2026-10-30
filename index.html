@@ -651,7 +651,7 @@
     function loadHistory() { try { const raw = localStorage.getItem(HISTORY_KEY); if (raw) chatHistory = JSON.parse(raw); } catch { chatHistory = []; } }
     function saveHistory() { try { localStorage.setItem(HISTORY_KEY, JSON.stringify(chatHistory)); } catch {} }
 
-                function renderChat() {
+                    function renderChat(forceScroll = true) {
       const box = document.getElementById('chat-messages');
       if (chatHistory.length === 0) { box.innerHTML = '<div class="empty-msg">Merhaba! Film sorabilir ya da sohbet edebilirsin.</div>'; return; }
       
@@ -660,9 +660,7 @@
         
         let inner = m.pending ? '<div style="opacity:0.6;">Düşünüyor...</div>' : formatAIResponse(m.content);
         
-        // Film Kartları
         if (m.cards && m.cards.length > 0) {
-          // Eğer görünür kart limiti atanmamışsa 3 yap (ilk açılışta 3 gözüksün)
           if (m.visibleCardLimit === undefined) m.visibleCardLimit = 3;
           const visibleCards = m.cards.slice(0, m.visibleCardLimit);
           
@@ -675,28 +673,29 @@
           });
           inner += `</div>`;
           
-          // Eğer gösterilenden daha fazla kart varsa "Daha Fazla" butonu ekle
           if (m.visibleCardLimit < m.cards.length) {
              inner += `<button onclick="showMoreChatCards(${index})" style="margin-top:10px; padding:8px; background:var(--accent); color:#000; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; width: 100%;">Daha Fazla Göster</button>`;
           }
         }
         
-        // Oyuncu Kartları
         if (m.cast && m.cast.length > 0) {
           inner += `<div style="display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:6px;">${m.cast.map(c => `<div style="flex:0 0 70px;text-align:center;" onclick="openDetail(${c.id}, 'actor')"><img src="${c.poster}" style="width:70px;height:70px;border-radius:50%;object-fit:cover;" /><div style="font-size:10px;font-weight:700;margin-top:4px;">${escapeHtml(c.name)}</div></div>`).join('')}</div>`;
         }
         return `<div class="chat-msg ai"><div class="bubble">${inner}</div></div>`;
       }).join('');
       
-      box.scrollTop = box.scrollHeight;
+      // SADECE istenirse (yeni mesaj atıldığında) en alta kaydır
+      if (forceScroll) {
+        box.scrollTop = box.scrollHeight;
+      }
     }
     
     // "Daha Fazla" butonuna tıklandığında çalışacak fonksiyon
-    window.showMoreChatCards = function(chatIndex) {
+        window.showMoreChatCards = function(chatIndex) {
       if (chatHistory[chatIndex]) {
         chatHistory[chatIndex].visibleCardLimit = (chatHistory[chatIndex].visibleCardLimit || 3) + 3;
         saveHistory();
-        renderChat();
+        renderChat(false); // <-- BURASI ÇOK ÖNEMLİ: false diyerek kaydırmayı engelliyoruz
       }
     };
 
