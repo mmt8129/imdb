@@ -556,6 +556,7 @@
                   <div class="cast-card" onclick="openDetail(${a.id}, 'actor')">
                     <img src="${a.profile_path ? IMG_URL + a.profile_path : 'https://via.placeholder.com/80'}" />
                     <div class="name">${escapeHtml(a.name)}</div>
+                    <div class="char">${escapeHtml(a.character || '')}</div>
                   </div>
                 `).join('')}
               </div>
