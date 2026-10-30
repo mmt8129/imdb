@@ -550,13 +550,15 @@
                 ${escapeHtml(m.overview || 'Konu bilgisi bulunmuyor.')}
                 ${!m.overview ? `<button onclick="fetchMovieOverviewWithAI(${m.id}, '${escapeHtml(m.title)}')" style="background:var(--accent);color:#000;border:none;padding:6px 12px;border-radius:20px;font-weight:600;margin-top:8px;">✨ Gemini ile Bul</button>` : ''}
               </div>
-              <div class="modal-section-title">Oyuncular</div>
+                            <div class="modal-section-title">Oyuncular</div>
               <div class="cast-scroll">
                 ${(m.credits?.cast || []).slice(0, 12).map(a => `
                   <div class="cast-card" onclick="openDetail(${a.id}, 'actor')">
                     <img src="${a.profile_path ? IMG_URL + a.profile_path : 'https://via.placeholder.com/80'}" />
                     <div class="name">${escapeHtml(a.name)}</div>
-                    <div class="char">${escapeHtml(a.character || '')}</div>
+                    <div class="char" style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                      ${a.character ? `(${escapeHtml(a.character)})` : ''}
+                    </div>
                   </div>
                 `).join('')}
               </div>
