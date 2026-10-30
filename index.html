@@ -651,7 +651,7 @@
     function loadHistory() { try { const raw = localStorage.getItem(HISTORY_KEY); if (raw) chatHistory = JSON.parse(raw); } catch { chatHistory = []; } }
     function saveHistory() { try { localStorage.setItem(HISTORY_KEY, JSON.stringify(chatHistory)); } catch {} }
 
-            function renderChat() {
+                function renderChat() {
       const box = document.getElementById('chat-messages');
       if (chatHistory.length === 0) { box.innerHTML = '<div class="empty-msg">Merhaba! Film sorabilir ya da sohbet edebilirsin.</div>'; return; }
       
@@ -711,7 +711,7 @@
     function clearChat() { if(confirm('Sohbet silinsin mi?')) { chatHistory = []; saveHistory(); renderChat(); } }
     document.getElementById('chat-input').addEventListener('keypress', e => { if (e.key === 'Enter') sendChatMessage(); });
 
-                    async function sendChatMessage() {
+                            async function sendChatMessage() {
       const input = document.getElementById('chat-input');
       const text = input.value.trim();
       if (!text || isSending) return;
