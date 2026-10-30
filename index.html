@@ -711,7 +711,7 @@
     function clearChat() { if(confirm('Sohbet silinsin mi?')) { chatHistory = []; saveHistory(); renderChat(); } }
     document.getElementById('chat-input').addEventListener('keypress', e => { if (e.key === 'Enter') sendChatMessage(); });
 
-                async function sendChatMessage() {
+                    async function sendChatMessage() {
       const input = document.getElementById('chat-input');
       const text = input.value.trim();
       if (!text || isSending) return;
@@ -728,15 +728,16 @@
       const lowerText = text.toLowerCase();
       const isMovieSearch = lowerText.includes('film') || lowerText.includes('filmler') || lowerText.includes('hakkında') || lowerText.includes('filmi');
 
-      // EĞER FİLM ARAMASI İSE GEMINI'YE GİTMEDEN DOĞRUDAN TMDB'DEN ÇEK
+      // 1. ADIM: FİLM ARAMASI İSE TMDB'YE BAK
       if (isMovieSearch) {
         try {
-          trackApi('tmdb'); // TMDB kotasını say
+          trackApi('tmdb'); 
           let searchQuery = text.replace(/filmi|film|filmler|hakkında|izle/gi, '').trim();
           
           const sr = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(searchQuery)}&language=tr-TR`);
           const sd = await sr.json();
           
+          // EĞER TMDB'DE SONUÇ BULUNDUYSA GEMINI'YE GİTME, DİREKT CEVAP VER
           if (sd.results && sd.results.length > 0) {
             directMovies = sd.results.map(m => ({ 
               id: m.id, 
@@ -744,7 +745,6 @@
               poster: m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No' 
             }));
             
-            // Gemini'yi atla, direkt kendi cevabımızı oluştur
             aiMsg.content = `${text} - Toplam ${directMovies.length} film bulundu.`;
             aiMsg.cards = directMovies;
             aiMsg.pending = false;
@@ -752,19 +752,19 @@
             isSending = false;
             saveHistory();
             renderChat();
-            return; // Fonksiyonu burada bitir, aşağıya (Gemini'ye) geçmesin
+            return; // TMDB'de bulunduğu için burada bitir
           }
         } catch(e) { console.error(e); }
       }
 
-      // EĞER FİLM ARAMASI DEĞİLSE NORMAL SOHBET İÇİN GEMINI'YE GİT
+      // 2. ADIM: EĞER BURAYA GELDİYSEK (Film araması değil VEYA TMDB'de bulunamadı), GEMINI'YE SOR
       try {
         trackApi('gemini');
         const res = await fetch(GEMINI_PROXY_URL, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text }] }],
-            systemInstruction: { parts: [{ text: `Sen yardımcı bir asistansın. Normal sohbetlerde kibarca cevap ver.` }] },
+            systemInstruction: { parts: [{ text: `Sen yardımcı bir asistansın. Film veya oyuncu hakkında soru sorulursa, eğer film ise kısaca konusunu özetle. Cevabın EN SONUNA MUTLAKA [TMDB: Film Adı | info] etiketi ekle.` }] },
             generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
           })
         });
@@ -775,7 +775,7 @@
           aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Cevap alınamadı.';
         }
         
-        // Gemini'nin verdiği etiketten film bulma (Yedek mekanizma, normal sohbette filmden bahsedilirse diye)
+        // Gemini'nin cevabından film etiketi çıkarma (Eğer varsa)
         const tag = aiText.match(/\[TMDB:\s*(.*?)\s*\|\s*(info|cast|person)\s*\]/i);
         if (tag) {
            const q = tag[1].trim(), type = tag[2].toLowerCase();
