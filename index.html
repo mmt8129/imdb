@@ -651,26 +651,54 @@
     function loadHistory() { try { const raw = localStorage.getItem(HISTORY_KEY); if (raw) chatHistory = JSON.parse(raw); } catch { chatHistory = []; } }
     function saveHistory() { try { localStorage.setItem(HISTORY_KEY, JSON.stringify(chatHistory)); } catch {} }
 
-        function renderChat() {
+            function renderChat() {
       const box = document.getElementById('chat-messages');
       if (chatHistory.length === 0) { box.innerHTML = '<div class="empty-msg">Merhaba! Film sorabilir ya da sohbet edebilirsin.</div>'; return; }
       
-      box.innerHTML = chatHistory.map(m => {
+      box.innerHTML = chatHistory.map((m, index) => {
         if (m.role === 'user') return `<div class="chat-msg user"><div class="bubble">${escapeHtml(m.content)}</div></div>`;
+        
         let inner = m.pending ? '<div style="opacity:0.6;">Düşünüyor...</div>' : formatAIResponse(m.content);
         
+        // Film Kartları
         if (m.cards && m.cards.length > 0) {
-          inner += `<div style="display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:6px;">${m.cards.map(c => `<div style="flex:0 0 90px;" onclick="openDetail(${c.id}, 'movie')"><img src="${c.poster}" style="width:90px;height:130px;object-fit:cover;border-radius:8px;" /><div style="font-size:11px;font-weight:700;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(c.title)}</div></div>`).join('')}</div>`;
+          // Eğer görünür kart limiti atanmamışsa 3 yap (ilk açılışta 3 gözüksün)
+          if (m.visibleCardLimit === undefined) m.visibleCardLimit = 3;
+          const visibleCards = m.cards.slice(0, m.visibleCardLimit);
+          
+          inner += `<div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-top:12px; width: 100%;">`;
+          visibleCards.forEach(c => {
+             inner += `<div onclick="openDetail(${c.id}, 'movie')">
+                <img src="${c.poster}" style="width:100%; aspect-ratio: 2/3; object-fit:cover; border-radius:8px;" />
+                <div style="font-size:11px;font-weight:700;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(c.title)}</div>
+             </div>`;
+          });
+          inner += `</div>`;
+          
+          // Eğer gösterilenden daha fazla kart varsa "Daha Fazla" butonu ekle
+          if (m.visibleCardLimit < m.cards.length) {
+             inner += `<button onclick="showMoreChatCards(${index})" style="margin-top:10px; padding:8px; background:var(--accent); color:#000; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; width: 100%;">Daha Fazla Göster</button>`;
+          }
         }
+        
+        // Oyuncu Kartları
         if (m.cast && m.cast.length > 0) {
           inner += `<div style="display:flex;gap:8px;overflow-x:auto;margin-top:10px;padding-bottom:6px;">${m.cast.map(c => `<div style="flex:0 0 70px;text-align:center;" onclick="openDetail(${c.id}, 'actor')"><img src="${c.poster}" style="width:70px;height:70px;border-radius:50%;object-fit:cover;" /><div style="font-size:10px;font-weight:700;margin-top:4px;">${escapeHtml(c.name)}</div></div>`).join('')}</div>`;
         }
         return `<div class="chat-msg ai"><div class="bubble">${inner}</div></div>`;
       }).join('');
-
-      // EKLENEN KISIM: Scroll alanını en alta kaydır
+      
       box.scrollTop = box.scrollHeight;
     }
+    
+    // "Daha Fazla" butonuna tıklandığında çalışacak fonksiyon
+    window.showMoreChatCards = function(chatIndex) {
+      if (chatHistory[chatIndex]) {
+        chatHistory[chatIndex].visibleCardLimit = (chatHistory[chatIndex].visibleCardLimit || 3) + 3;
+        saveHistory();
+        renderChat();
+      }
+    };
 
     function formatAIResponse(text) {
       if (!text) return '';
@@ -683,44 +711,60 @@
     function clearChat() { if(confirm('Sohbet silinsin mi?')) { chatHistory = []; saveHistory(); renderChat(); } }
     document.getElementById('chat-input').addEventListener('keypress', e => { if (e.key === 'Enter') sendChatMessage(); });
 
-        async function sendChatMessage() {
+                async function sendChatMessage() {
       const input = document.getElementById('chat-input');
       const text = input.value.trim();
       if (!text || isSending) return;
       input.value = '';
       isSending = true;
+      
       chatHistory.push({ role: 'user', content: text });
-      const aiMsg = { role: 'ai', content: '', pending: true, cards: [], cast: [] };
+      const aiMsg = { role: 'ai', content: '', pending: true, cards: [], cast: [], visibleCardLimit: 3 };
       chatHistory.push(aiMsg);
       saveHistory();
       renderChat();
 
       let directMovies = [];
-      // YENİ EKLENEN KISIM: Sadece film kelimesi geçiyorsa TMDB'de ara
       const lowerText = text.toLowerCase();
       const isMovieSearch = lowerText.includes('film') || lowerText.includes('filmler') || lowerText.includes('hakkında') || lowerText.includes('filmi');
 
+      // EĞER FİLM ARAMASI İSE GEMINI'YE GİTMEDEN DOĞRUDAN TMDB'DEN ÇEK
       if (isMovieSearch) {
         try {
-          const sr = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(text)}&language=tr-TR`);
+          trackApi('tmdb'); // TMDB kotasını say
+          let searchQuery = text.replace(/filmi|film|filmler|hakkında|izle/gi, '').trim();
+          
+          const sr = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(searchQuery)}&language=tr-TR`);
           const sd = await sr.json();
-          if (sd.results?.length > 0) {
+          
+          if (sd.results && sd.results.length > 0) {
             directMovies = sd.results.map(m => ({ 
               id: m.id, 
               title: m.title, 
               poster: m.poster_path ? IMG_URL + m.poster_path : 'https://via.placeholder.com/100x150?text=No' 
             }));
+            
+            // Gemini'yi atla, direkt kendi cevabımızı oluştur
+            aiMsg.content = `${text} - Toplam ${directMovies.length} film bulundu.`;
+            aiMsg.cards = directMovies;
+            aiMsg.pending = false;
+            
+            isSending = false;
+            saveHistory();
+            renderChat();
+            return; // Fonksiyonu burada bitir, aşağıya (Gemini'ye) geçmesin
           }
-        } catch(e) {}
+        } catch(e) { console.error(e); }
       }
 
+      // EĞER FİLM ARAMASI DEĞİLSE NORMAL SOHBET İÇİN GEMINI'YE GİT
       try {
         trackApi('gemini');
         const res = await fetch(GEMINI_PROXY_URL, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text }] }],
-            systemInstruction: { parts: [{ text: `Sen yardımcı bir asistansın. Film veya oyuncu hakkında soru sorulursa, eğer film ise kısaca konusunu özetle. Cevabın EN SONUNA MUTLAKA [TMDB: Film Adı | info] etiketi ekle.` }] },
+            systemInstruction: { parts: [{ text: `Sen yardımcı bir asistansın. Normal sohbetlerde kibarca cevap ver.` }] },
             generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
           })
         });
@@ -731,12 +775,7 @@
           aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Cevap alınamadı.';
         }
         
-        if (aiText === 'Cevap alınamadı.' && directMovies.length > 0) {
-           aiText = `İşte "${text}" için bulduğum filmler:`;
-        }
-        aiMsg.content = aiText;
-        aiMsg.pending = false;
-
+        // Gemini'nin verdiği etiketten film bulma (Yedek mekanizma, normal sohbette filmden bahsedilirse diye)
         const tag = aiText.match(/\[TMDB:\s*(.*?)\s*\|\s*(info|cast|person)\s*\]/i);
         if (tag) {
            const q = tag[1].trim(), type = tag[2].toLowerCase();
@@ -753,13 +792,14 @@
                aiMsg.cards.push({ id: mv.id, title: mv.title, poster: mv.poster_path ? IMG_URL + mv.poster_path : '' });
              }
            }
-        } else if (directMovies.length > 0) {
-           aiMsg.cards = directMovies;
         }
+        
+        aiMsg.content = aiText;
+        aiMsg.pending = false;
+
       } catch(e) { 
         aiMsg.content = 'Bağlantı hatası.'; 
         aiMsg.pending = false; 
-        if (directMovies.length > 0) aiMsg.cards = directMovies;
       }
       
       isSending = false;
