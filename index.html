@@ -651,9 +651,10 @@
     function loadHistory() { try { const raw = localStorage.getItem(HISTORY_KEY); if (raw) chatHistory = JSON.parse(raw); } catch { chatHistory = []; } }
     function saveHistory() { try { localStorage.setItem(HISTORY_KEY, JSON.stringify(chatHistory)); } catch {} }
 
-    function renderChat() {
+        function renderChat() {
       const box = document.getElementById('chat-messages');
       if (chatHistory.length === 0) { box.innerHTML = '<div class="empty-msg">Merhaba! Film sorabilir ya da sohbet edebilirsin.</div>'; return; }
+      
       box.innerHTML = chatHistory.map(m => {
         if (m.role === 'user') return `<div class="chat-msg user"><div class="bubble">${escapeHtml(m.content)}</div></div>`;
         let inner = m.pending ? '<div style="opacity:0.6;">Düşünüyor...</div>' : formatAIResponse(m.content);
@@ -666,7 +667,9 @@
         }
         return `<div class="chat-msg ai"><div class="bubble">${inner}</div></div>`;
       }).join('');
-      window.scrollTo(0, document.body.scrollHeight);
+
+      // EKLENEN KISIM: Scroll alanını en alta kaydır
+      box.scrollTop = box.scrollHeight;
     }
 
     function formatAIResponse(text) {
